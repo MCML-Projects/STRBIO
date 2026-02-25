@@ -26,7 +26,7 @@ def parse_pdb(pdb_id):
             "Protein Name": pdb_data.get("struct", {}).get("title"),
             ## "Source Organism": NO LO HE ENCONTRADO 
             "Determination Method": pdb_data.get("exptl", {}).get("method"),
-            "Authors": ", ".join(pdb_data.get("rcsb_authors"))#Separados por comas, REVISAR COMO SE OBTIENEN LOS AUTORES
+            "Authors": ", ".join(pdb_data.get("rcsb_authors")),#Separados por comas, REVISAR COMO SE OBTIENEN LOS AUTORES
             "Release Date": pdb_data.get("rcsb_accession_info", {}).get("initial_release_date"),
     
             "Resolution": pdb_data.get("rcsb_entry_info", {}).get("resolution_combined"),
@@ -36,6 +36,7 @@ def parse_pdb(pdb_id):
 ```
 
 ```{python}
+#| eval: false
 import pandas as pd
 
 pdb_list = ["1RBP", "1QRE", "1DGF"]
