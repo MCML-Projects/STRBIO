@@ -186,6 +186,8 @@ def compute_distance_matrix(pdb_id):
         return None
 ```
 
+(Lo he intentado hacer sin API porque gema me ha rallado con el enunciado y creo que modesto se refiere a que lo hagamos así ⬇⬇⬇⬇⬇)
+
 Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
 
 ```{python download_pdb_files}
