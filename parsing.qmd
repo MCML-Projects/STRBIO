@@ -24,7 +24,7 @@ DUDA: me pone en la web que puso lucía que las posibles salidas son directament
 200 o 404, eso es que no puede haber más?
 
 ```{python}
-
+import pandas as pd
 import requests
 
 def parse_pdb(pdb_id):
@@ -133,10 +133,17 @@ def parse_pdb(pdb_id):
 
 # Prueba
 pdb_list = ["1RBP", "1QRE", "1DGF"]
+metadata = []
+
 for pdb in pdb_list:
-    print(parse_pdb(pdb))
+    pdb_dict = parse_pdb(pdb)
+    metadata.append(pdb_dict)
 
+# Save in .csv
+df = pd.DataFrame(metadata)
+df.to_csv("metadata.csv", index=False)
 
+df_loaded = pd.read_csv("metadata.csv")
 
 ```
 
