@@ -185,3 +185,109 @@ def compute_distance_matrix(pdb_id):
         print(f"Error fetching data for PDB ID: {pdb_id}")
         return None
 ```
+
+Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
+
+```{python download_pdb_files}
+def download_pdb(pdb_id):
+    """
+    docs
+    """
+    try:
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+        response = requests.get(url, timeout = 100)
+    
+    except requests.exceptions.Timeout:
+        print(f"[408] Timeout error for ID: {pdb_id}.")
+        return
+
+    if response.status_code == 404:
+        print(f"[404] Result not found for ID: {pdb_id}")
+        return
+
+    # Write the pdb file is everything is OK
+    with open(f"{pdb_id}.pdb", "w") as f:
+        f.write(response.text)
+    
+    return f"{pdb_id}.pdb"
+
+# Try for every protein
+pdb_list = ["1RBP", "1QRE", "1DGF"]
+for protein in pdb_list:
+    download_pdb(protein)
+```
+
+A continuación, extraemos la información estructural de los archivos.
+
+```{python structural_info}
+def get_structural_info(file_name):
+    """
+    doc.
+    """
+    # CONTROL DE ARGUMENTOS DE QUE SEA UN NOMBRE VALIDO, etc.
+
+    coordinates = [] # list of dictionaries to save the aminoacid which is part of, chain and xyz coordinates of CA
+    with open(file_name, "r") as f:
+        for line in f:
+            if line.startswith("ATOM"):
+                line = line.strip().split() # List of elements of each atom
+                if line[2] == "CA": # If the coordinates are from a C alpha, save the info chain, number of the aminoacid in the protein and xyz coordinates
+                    chain = line[4]
+                    residue_number = line[5]
+                    x = float(line[6])
+                    y = float(line[7])
+                    z = float(line[8])
+                    
+                    coordinates.append({
+                        "chain": chain,
+                        "residue_number": residue_number,
+                        "x": x,
+                        "y": y,
+                        "z": z
+                        })
+    # Transform the data into a df
+    df = pd.DataFrame(coordinates)
+    return df
+
+# Get the structural info for each protein
+df_1RBP = get_structural_info("1RBP.pdb")
+df_1QRE = get_structural_info("1QRE.pdb")
+df_1DGF = get_structural_info("1DGF.pdb")
+
+# prueba
+print(df_1RBP)
+```
+
+Generamos la matriz de distancias.
+
+```{python distance_matrix}
+import numpy as np
+import math
+
+def distance_matrix(df):
+    """
+    docstring
+    """
+    size = N = len(df) # Matriz size = protein's length
+    M = np.zeros((N,N)) # Create an empty matrix
+
+    # Extract the xyz coordinates from the dataframe, they are a list of the xyz coordinates as a list for each CA [[x,y,z]]
+    coordinates = df[["x","y","z"]].values 
+
+    for row, coord1 in enumerate(coordinates): # xyz from reference CA (row)
+        for column, coord2 in enumerate(coordinates): # xyz from the other CA (column)
+
+            dx = coord2[0] - coord1[0]
+            dy = coord2[1] - coord1[1]
+            dz = coord2[2] - coord1[2]
+
+            distance = math.sqrt(math.pow(dx,2) + math.pow(dy,2) + math.pow(dz,2))
+
+            M[row,column] = distance # Fill the cell in matrix
+
+    return M
+
+print(distance_matrix(df_1RBP))
+```
+
+3. Write a function for plotting the corresponding contact map for each structure, using a standard contact threshold (between 6-12 Å) and different colors for different contacts (intra- and interchain).
