@@ -220,6 +220,10 @@ for protein in pdb_list:
 
 ```
 
+justificacion de porqué hay que acceder así:
+El formato PDB es un estándar de columnas fijas (basado en las antiguas tarjetas perforadas). Esto significa que no importa cuántos espacios haya; lo que importa es la posición exacta (el índice) de cada carácter en la línea.
+
+
 
 Generamos la matriz de distancias
 
