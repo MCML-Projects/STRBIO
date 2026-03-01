@@ -50,42 +50,85 @@ def parse_pdb(pdb_id):
     if response_entry.status_code == 404 or response_entity.status_code == 404:
         print(f"[404] Result not found for ID: {pdb_id}")
         return
+    
     ###no haría falta poner else == 200 el status code porque ya hay returns arriba
     
     #convert to json if everything is OK:
     data_entry = response_entry.json()
     data_entity = response_entity.json()
 
-    #EXTRACCIÓN DE INFORMACIÓN -> dict metadata
-    ###esto es lo que yo dividiría por variables y luego metería en metadata 
-    # (me da vibes a lo que hicimos en R en EvamTools, y al final el dict que
-    #  haces return, me queda más limpio en la cabeza, pero igual me da)
-    metadata = {
-        #PDB ID
-        "PDB ID": data_entry.get("rcsb_id"),
-        #PROTEIN NAME 
-        "Protein Name": data_entity.get("rcsb_polymer_entity", {}).get("pdbx_description"), 
-        # he cambiado lo que había porque obteníamos el título del artículo;
-        #  y ahora el nombre de la proteína
-        ## "Source Organism"
-        "Source Organism": data_entity.get("rcsb_entity_source_organism", [{}])[0].get("scientific_name"),
-        # determination method 
-        "Determination Method": data_entry.get("exptl", {})[0].get("method"),
-        #authors (Están en rcsb_primary_citation dentro de data_entry)
-        "Authors": ", ".join(data_entry.get("rcsb_primary_citation", {}).get("rcsb_authors", ["N/A"])),
-        #release date
-        "Release Date": data_entry.get("rcsb_accession_info", {}).get("initial_release_date"),
-        #resolution -> como es una lista he puesto el [0] final para que no salgan []
-        "Resolution": data_entry.get("rcsb_entry_info", {}).get("resolution_combined")[0],
-        #NUM PEPTIDE CHAINS
-        "Number of Peptide Chains": data_entry.get("rcsb_entry_info", {}).get("polymer_entity_count_protein"),
-        
-        #OTHER MOLECULES
-        "Number of Other Molecules": data_entry.get("rcsb_entry_info", {}).get("nonpolymer_entity_count")
-        ###igual meter qué otras moléculas son en caso de que las tenga y sino un NA??? -> 
-        # if Number of Ohter.... == 0 -> N/A ; else sacamos los nombres
-    }
+    # PDB ID
+    id = data_entry.get("rcsb_id", "N/A") #In case rcsb_id does not exist, N/A
+
+    # Protein name
+    polymer_entity = data_entity.get("rcsb_polymer_entity", {}) #In case rcsb_polumer_entity does not exist, empty dict to avoid errors
+    prot_name = polymer_entity.get("pdbx_description", "N/A") 
     
+    # Source Organism
+    organisms = data_entity.get("rcsb_entity_source_organism", []) #rcsb_entity_source_organism is a list
+    source_organisms = []
+    for organism in organisms: # In case there is more than one organism (if there is no one, no error)
+        name = organism.get("ncbi_scientific_name") # NO second option to avoid list of N/A
+        if name:
+            source_organisms.append(name) 
+    
+    if source_organisms:
+        source_organisms = ", ".join(source_organisms) # Convert into str
+    else:
+        source_organisms = "N/A" #N/A in case there is no organism
+
+    # Determination Method
+    exptl = data_entry.get("exptl", []) # exptl is a list
+    det_method = []
+    for indiv_exp in exptl: # In case there is more than one exp
+        method = indiv_exp.get("method")
+        if method:
+            det_method.append(method)
+    
+    if det_method:
+        det_method = ", ".join(det_method) # Convert into str
+    else:
+        det_method = "N/A"
+
+    # Authors
+    primary_cit = data_entry.get("rcsb_primary_citation", {}) # rcsb_primary_citation is a dict
+    authors = primary_cit.get("rcsb_authors", []) # rcsb_authors is a list
+    if authors:
+        authors = ", ".join(authors) # Convert into str
+    else:
+        authors = "N/A"
+
+    # Release date
+    acc_info = data_entry.get("rcsb_accession_info", {}) # rcsb_accession_info is a dict
+    date = acc_info.get("initial_release_date", "N/A")
+
+    # Resolution
+    entry_info = data_entry.get("rcsb_entry_info", {}) # rcsb_entry_info is a dict
+    resolution = entry_info.get("resolution_combined", []) # resolution_combined is a list
+    if resolution: # If resolution is not an empty list
+        resolution = resolution[0] # To delete the '[]' in the final table
+    else:
+        resolution = "N/A"
+
+    # Number of peptide chains
+    num_chains = entry_info.get("polymer_entity_count_protein", "N/A")
+
+    # Other molecules
+    molecules = entry_info.get("nonpolymer_entity_count", "N/A")
+
+    # Dictionaty metadata
+
+    metadata = {
+        "PDB ID": id,
+        "Protein Name": prot_name,
+        "Source Organims": source_organisms,
+        "Determination Method": det_method,
+        "Authors": authors,
+        "Release Date": date,
+        "Resolution": resolution,
+        "Number of Peptide Chains": num_chains,
+        "Number of Other Molecules": molecules
+    }
     return metadata
 
 # Prueba
