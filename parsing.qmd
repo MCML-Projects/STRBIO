@@ -154,47 +154,18 @@ Igual podríamos generar un csv que queda más limpio con los metadatos
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
 
 
-Esto es lo de gemini que no miró lucía:
-
-```{python}
-import numpy as np  
-
-def compute_distance_matrix(pdb_id):
-    url = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        pdb_data = response.json()
-        # Extract the coordinates of C-alpha atoms
-        ca_atoms = []
-        for entity in pdb_data.get("rcsb_entry_info", {}).get("polymer_entity_count_protein", []):
-            for atom in entity.get("atom_site", []):
-                if atom.get("atom_name") == "CA":
-                    ca_atoms.append((atom.get("x"), atom.get("y"), atom.get("z")))
-        
-        # Compute the pairwise distance matrix
-        distance_matrix = np.zeros((len(ca_atoms), len(ca_atoms)))
-        for i in range(len(ca_atoms)):
-            for j in range(i + 1, len(ca_atoms)):
-                distance = np.linalg.norm(np.array(ca_atoms[i]) - np.array(ca_atoms[j]))
-                distance_matrix[i][j] = distance
-                distance_matrix[j][i] = distance  # Symmetric matrix
-        
-        return distance_matrix
-    else:
-        print(f"Error fetching data for PDB ID: {pdb_id}")
-        return None
-```
-
 (Lo he intentado hacer sin API porque gema me ha rallado con el enunciado y creo que modesto se refiere a que lo hagamos así ⬇⬇⬇⬇⬇)
 
 Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
 
 ```{python download_pdb_files}
-def download_pdb(pdb_id):
+import requests
+import pandas as pd
+def get_structural_info(pdb_id):
     """
-    docs
+    docstring
     """
+
     try:
         url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
         response = requests.get(url, timeout = 100)
@@ -206,61 +177,51 @@ def download_pdb(pdb_id):
     if response.status_code == 404:
         print(f"[404] Result not found for ID: {pdb_id}")
         return
+    ### creo que hay q añadir más handling errors en este caso
+    # creo que sí puede haber más respuestas que 200 / 404 
+    # (tenemos una función ya hecha para handling errors de apis de bases de datos biomed si eso la pego))
+    if response.status_code == 200:
+        pdb_data = response.text #.text because is a .pdb file
 
-    # Write the pdb file is everything is OK
-    with open(f"{pdb_id}.pdb", "w") as f:
-        f.write(response.text)
-    
-    return f"{pdb_id}.pdb"
+        coords = [] # List to store coordinates
+        for line in pdb_data.split("\n"): # Each line
+            if line.startswith("ATOM"): # Processing only atom lines
+                ##### WARNING -> Fixed-column parsing (not split/tab) is required by the PDB standard 
+                ###(EN PDB NO SE SEPARA POR TABULADORES VAYA, son columnas fijas)
+                atom_name = line[12:16].strip() #strip to delete blank spaces
+                if atom_name == "CA": # If it is CA
+                    coord_x = line[30:38].strip()
+                    coord_y = line[38:46].strip()
+                    coord_z = line[46:54].strip()
+
+                    indiv_coords = {"x": float(coord_x),
+                              "y": float(coord_y),
+                              "z": float(coord_z)
+                            }
+                    chain = line[21:22].strip()
+                    residue_number = line[22:26].strip()
+
+                    coords.append({
+                        "chain": chain,
+                        "residue_number": residue_number,
+                        "x": float(coord_x),
+                        "y": float(coord_y),
+                        "z": float(coord_z)
+                        })
+        # Transform the data into a df
+        df_coords = pd.DataFrame(coords)
+    return df_coords
 
 # Try for every protein
 pdb_list = ["1RBP", "1QRE", "1DGF"]
+df_conjunto = []
 for protein in pdb_list:
-    download_pdb(protein)
+    df_conjunto.append(get_structural_info(protein))
+
 ```
 
-A continuación, extraemos la información estructural de los archivos.
 
-```{python structural_info}
-def get_structural_info(file_name):
-    """
-    doc.
-    """
-    # CONTROL DE ARGUMENTOS DE QUE SEA UN NOMBRE VALIDO, etc.
-
-    coordinates = [] # list of dictionaries to save the aminoacid which is part of, chain and xyz coordinates of CA
-    with open(file_name, "r") as f:
-        for line in f:
-            if line.startswith("ATOM"):
-                line = line.strip().split() # List of elements of each atom
-                if line[2] == "CA": # If the coordinates are from a C alpha, save the info chain, number of the aminoacid in the protein and xyz coordinates
-                    chain = line[4]
-                    residue_number = line[5]
-                    x = float(line[6])
-                    y = float(line[7])
-                    z = float(line[8])
-                    
-                    coordinates.append({
-                        "chain": chain,
-                        "residue_number": residue_number,
-                        "x": x,
-                        "y": y,
-                        "z": z
-                        })
-    # Transform the data into a df
-    df = pd.DataFrame(coordinates)
-    return df
-
-# Get the structural info for each protein
-df_1RBP = get_structural_info("1RBP.pdb")
-df_1QRE = get_structural_info("1QRE.pdb")
-df_1DGF = get_structural_info("1DGF.pdb")
-
-# prueba
-print(df_1RBP)
-```
-
-Generamos la matriz de distancias.
+Generamos la matriz de distancias
 
 ```{python distance_matrix}
 import numpy as np
@@ -289,7 +250,8 @@ def distance_matrix(df):
 
     return M
 
-print(distance_matrix(df_1RBP))
+for element in df_conjunto:
+    print(distance_matrix(element))
 ```
 
 3. Write a function for plotting the corresponding contact map for each structure, using a standard contact threshold (between 6-12 Å) and different colors for different contacts (intra- and interchain).
