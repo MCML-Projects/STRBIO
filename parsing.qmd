@@ -135,6 +135,7 @@ def parse_pdb(pdb_id):
 pdb_list = ["1RBP", "1QRE", "1DGF"]
 metadata = []
 
+#Alomejor se puede hacer una función por separado que tenga como argumentos la lista de pdbs. Y desde esta función que se llame a la función del API para cada pdb y se guarde la inf. en un csv (tal cual está abajo). 
 for pdb in pdb_list:
     pdb_dict = parse_pdb(pdb)
     metadata.append(pdb_dict)
@@ -150,6 +151,22 @@ df_loaded = pd.read_csv("metadata.csv")
 [parte 1 ->]{style="font-weight: bold; font-size: 2em;"} Esto te genera un dict de python, y pone que hagamos table or report.
 Igual podríamos generar un csv que queda más limpio con los metadatos
 
+```{python}
+def save_metadata_csv(pd_list, filename):
+    """
+    falta docstring
+    """
+    metadata = []
+    for pdb in pd_list:
+        pdb_dict = parse_pdb(pdb)
+        metadata.append(pdb_dict)
+    # Save in .csv
+    df = pd.DataFrame(metadata)
+    df.to_csv(filename, index=False)
+
+    df_loaded = pd.read_csv(filename) #No sé si esto es muy necesario, porque en realidad ya se ha guardado los metadatos en el csv. 
+    return df_loaded
+```
 
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
 
@@ -180,6 +197,8 @@ def get_structural_info(pdb_id):
     ### creo que hay q añadir más handling errors en este caso
     # creo que sí puede haber más respuestas que 200 / 404 
     # (tenemos una función ya hecha para handling errors de apis de bases de datos biomed si eso la pego))
+
+    #L: Me gusta mucho como está hecha la función, lo dejaría tal cual. Pero si es verdad que habría que comprobar lo de los errores para todas las llamadas a la API. 
     if response.status_code == 200:
         pdb_data = response.text #.text because is a .pdb file
 
@@ -358,3 +377,5 @@ for id, element in df_conjunto.items():
     m_dist = distance_matrix(element) 
     plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
+
+4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
