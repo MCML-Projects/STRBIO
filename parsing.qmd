@@ -85,7 +85,7 @@ def parse_pdb(pdb_id):
     prot_name = polymer_entity.get("pdbx_description", "N/A") 
     
     # Source Organism
-    organism = extract_join_metadata(data_entity, "rcsb_entity_source_organism", subkey="ncbi_scientific_name") 
+    source_organisms = extract_join_metadata(data_entity, "rcsb_entity_source_organism", subkey="ncbi_scientific_name") 
 
     # Determination Method
     det_method = extract_join_metadata(data_entry, "exptl", subkey="method")
