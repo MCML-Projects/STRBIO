@@ -193,7 +193,7 @@ Igual podríamos generar un csv que queda más limpio con los metadatos
 """
 def save_metadata_csv(pd_list, filename):
     """
-    falta docstring
+    #falta docstring
     """
     metadata = []
     for pdb in pd_list:
