@@ -24,6 +24,25 @@ DUDA: me pone en la web que puso lucía que las posibles salidas son directament
 200 o 404, eso es que no puede haber más?
 
 ```{python}
+#Función para repetir el paso de extraer la info y unir. 
+def extract_join_metadata(data_dict, metadata_key, subkey=None):
+    
+    items = data_dict.get(metadata_key, []) #metadata_key is a list
+    extracted_items = []
+
+    if subkey:
+    for item in items: # In case there is more than one item (if there is no one, no error)
+        value = item.get(subkey) # NO second option to avoid
+        if value:
+            extracted_items.append(value)
+
+    if extracted_items:
+        return ", ".join(extracted_items) # Convert into str
+    else:
+        return "N/A" #N/A in case there is no item
+    
+```
+```{python}
 import pandas as pd
 import requests
 
@@ -31,15 +50,16 @@ def parse_pdb(pdb_id):
     """
     falta docstring
     """
+    # url entry for general info -> PDB ID; Determination Method; Authors; Release Date; Resolution; Num of peptide chains; Numb of other molecules
+    url_entry = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
+    # url entity for more info -> protein name, source organism
+    url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/1"
+
     #Handling errors for APIs:
     try:
-        # url entry for general info -> PDB ID; Determination Method; Authors; Release Date; Resolution; Num of peptide chains; Numb of other molecules
-        url_entry = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
+        
         response_entry = requests.get(url_entry,
                                     timeout = 100) #more than 100 secs --> timeout error
-        
-        # url entity for more info -> protein name, source organism
-        url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/1"
         response_entity = requests.get(url_entity,
                                     timeout = 100) #idem as entry
     #to check timeout error
@@ -65,6 +85,17 @@ def parse_pdb(pdb_id):
     prot_name = polymer_entity.get("pdbx_description", "N/A") 
     
     # Source Organism
+    organism = extract_join_metadata(data_entity, "rcsb_entity_source_organism", subkey="ncbi_scientific_name") 
+
+    # Determination Method
+    det_method = extract_join_metadata(data_entry, "exptl", subkey="method")
+
+    #Todo lo de abajo lo sustituyo por la función que he hecho de extract_join_metadata, para que quede más limpio el código.
+    
+    ### Si os gusta lo de la función de extract_join_metadata, simplemente es borrar lo que está entre """. 
+
+    """
+    # Source Organism
     organisms = data_entity.get("rcsb_entity_source_organism", []) #rcsb_entity_source_organism is a list
     source_organisms = []
     for organism in organisms: # In case there is more than one organism (if there is no one, no error)
@@ -89,14 +120,20 @@ def parse_pdb(pdb_id):
         det_method = ", ".join(det_method) # Convert into str
     else:
         det_method = "N/A"
+    """
 
     # Authors
     primary_cit = data_entry.get("rcsb_primary_citation", {}) # rcsb_primary_citation is a dict
+
+    authors = extract_join_metadata(data_entry, "rcsb_authors") 
+    #Lo mismo que os decía antes respecto a la nueva función. 
+    """
     authors = primary_cit.get("rcsb_authors", []) # rcsb_authors is a list
     if authors:
         authors = ", ".join(authors) # Convert into str
     else:
         authors = "N/A"
+    """
 
     # Release date
     acc_info = data_entry.get("rcsb_accession_info", {}) # rcsb_accession_info is a dict
@@ -152,6 +189,8 @@ df_loaded = pd.read_csv("metadata.csv")
 Igual podríamos generar un csv que queda más limpio con los metadatos
 
 ```{python}
+#Comprobar que funciona
+"""
 def save_metadata_csv(pd_list, filename):
     """
     falta docstring
@@ -166,6 +205,7 @@ def save_metadata_csv(pd_list, filename):
 
     df_loaded = pd.read_csv(filename) #No sé si esto es muy necesario, porque en realidad ya se ha guardado los metadatos en el csv. 
     return df_loaded
+    """
 ```
 
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
@@ -305,6 +345,8 @@ def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
     # np.equal.outer genera una matriz donde [i,j] es True si chains[i] == chains[j]
     same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) ###es un poco raro, opción B (en teoría es mazo más lenta, por si os gusta más:)
 
+    #Lo dejaría de la forma que has puesto. No sabía que existía una función así, pero si es más rápido y eficiente la dejamos. A no ser que el profesor quiera que hasta esa parte la hagamos desde 0. 
+
     ###OPCIÓN B:
     # for i in range(len(distance_matrix)):        # Recorre las filas (residuo i)
     # for j in range(len(distance_matrix)):    # Recorre las columnas (residuo j)
@@ -337,7 +379,7 @@ def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
     #Legend
     #patches of color manually:
 
-    blue_patch = mpatches.Patch(color="green", label="Intra-chain contact")
+    blue_patch = mpatches.Patch(color="green", label="Intra-chain contact") #Mejor llamarlo green_patch no? O se llama blue por algo en específico?
     red_patch = mpatches.Patch(color="red", label="Inter-chain contact")
     patches = [blue_patch, red_patch]
     
@@ -346,7 +388,7 @@ def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
     plt.legend(handles=patches, loc="upper right", bbox_to_anchor=(1.35, 1))
  
     #Title and labels
-    plt.title(f"CONTACT MAP (Protein: {pdb_id}) (8-12 Å)", fontsize=14)
+    plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
     plt.xlabel("Residue Index", fontsize=12)
     plt.ylabel("Residue Index", fontsize=12)
     
