@@ -373,14 +373,14 @@ Finally, the function extract the chain, number of residue and the cartesian coo
 d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
 \]
 
-To generate the contact matrix for each protein, we have create a python function which plot the contact between residues based on distance threshold (6-12 A) and differences between intra or interchain contacts. 
+There can be both intrachain and interchain contacts, taking that into account, @contact_matrix_function function was implemented to generate the corresponding matrices from the pairwise Cα distance matrix and residue chain information. Contacts were defined using a distance threshold between 6 Å and 12 Å by default, excluding trivial sequential contacts and focusing on spatially relevant interactions associated with protein folding. 
 
-It is 
+To visualize the computed contact matrices of each protein @plot_contact_matrix_function function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. This make easier the identification of oligomers.
+
 
 ```{python}
 #| label: contact_matrix_function
-
-def contact_matrix(structural_info, distance_matrix):
+def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distance=12):
     """
     Generate intrachain and interchain contact matrices based on distance thresholds.
 
@@ -390,6 +390,10 @@ def contact_matrix(structural_info, distance_matrix):
         DataFrame containing structural information with at least a "chain" column.
     distance_matrix : np.ndarray
         Matrix of pairwise distances between residues.
+    min_distance : int
+        Minimum distance threshold in Angstroms (default: 6).
+    max_distance : int
+        Maximum distance threshold in Angstroms (default: 12).
 
     Returns
     -------
@@ -409,10 +413,10 @@ def contact_matrix(structural_info, distance_matrix):
     matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
 
     # Define significant folding distances:
-    # Threshold [6, 12] avoids:
+    # Default threshold [6, 12] avoids:
     # >6: immediate neighbors (useless for folding info)
     # <12: atoms that are too far apart  
-    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+    distance_bool_matrix = (distance_matrix >= min_distance) & (distance_matrix <= max_distance)
 
     # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
     same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
@@ -428,6 +432,86 @@ def contact_matrix(structural_info, distance_matrix):
     matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
 
     return matrix_intra, matrix_inter
+```
+
+```{python}
+#| label: plot_contact_matrix_function
+
+def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein", filename=None):
+    
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+
+    plt.figure(figsize=(8, 8)) # size of the plot
+
+    # Plot Intra-chain contacts in Green
+    plt.imshow(intrachain_matrix, 
+              cmap="Greens_r", 
+              interpolation="none", # Prevents  (each pixel represents one residue)
+              origin="lower") # origin="lower" to ensure the (0,0) index starts at the bottom-left
+
+    # Plot Inter-chain contacts in Green
+    # Since contact matrices contain NaNs, the second plot won't overwrite the first.
+    plt.imshow(interchain_matrix, 
+              cmap="Reds", 
+              interpolation="none", 
+              origin="lower")
+
+    # Manually creating patches for the legend
+    green_patch = mpatches.Patch(color="green", 
+                                label="Intra-chain contact") 
+    red_patch = mpatches.Patch(color="red", 
+                              label="Inter-chain contact")
+    patches = [green_patch, red_patch]
+    
+    # Adding legend
+    plt.legend(handles=patches, # Text of the legend
+              loc="upper right", # Place of the legend
+              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
+ 
+    # Title and labels
+    plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
+    plt.xlabel("Residue Index", fontsize=12)
+    plt.ylabel("Residue Index", fontsize=12)
+    
+    # Identify indices where the chain ID changes by comparing current to next element
+    idx_changes = np.where(chain_per_res[:-1] != chain_per_res[1:])[0] 
+    # List of the start and end points for every chain
+    boundaries = [0] + list(idx_changes + 0.5) + [len(chain_per_res)]
+
+    # Unique chain names in order of appearance
+    unique_chains = []
+    unique_chains_label = []
+    for each_chain in chain_per_res:
+        if each_chain not in unique_chains: 
+            unique_chains.append(each_chain)
+            unique_chains_label.append(f"Chain {each_chain}")
+    
+    # Plots the lines between different chains
+    for idx in idx_changes:
+        # Add 0.5 to place the line exactly between the pixels of two residues
+        plt.axhline(y=idx + 0.5, color="black", linestyle="--")
+        plt.axvline(x=idx + 0.5, color='black', linestyle="--")
+    
+    # Place the labels of the chain names at the midpoint of each boundary
+    ticks = []
+    for i in range(len(boundaries) - 1):
+        midpoint = (boundaries[i] + boundaries[i+1]) / 2
+        ticks.append(midpoint)
+
+    # Set the ticks and labels on both axes
+    plt.xticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    plt.yticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    
+    plt.tight_layout() # Ensures labels/legend don't get cut off
+    plt.show()
+
+    if filename: # Check if a filename was provided to save the image
+        # Save the figure as a PNG file
+        plt.savefig(f"{filename}.png", 
+                    dpi=300, # dpi=300 ensures high resolution
+                    bbox_inches="tight") # bbox_inches="tight" prevents labels from being cut off
+        print(f"Contact plot for {pdb_id} successfully saved to {filename}.png")
 ```
 
 ---
