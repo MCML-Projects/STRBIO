@@ -404,7 +404,6 @@ Generamos la matriz de distancias
 ```{python}
 #| label: distance_matrix_function
 
-
 def distance_matrix(df_structural_info):
     """
     Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.
@@ -451,49 +450,59 @@ def distance_matrix(df_structural_info):
 
 función para generar las matrices de contacto:
 -intra e inter chain
+
 ```{python}
 #| label: contact_matrix_function
 
 def contact_matrix(structural_info, distance_matrix):
     """
-    docstring
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
     """
+    # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
 
-    # Initialize matrices with NaNs so they aren't plotted
-    matrix_intra = np.full_like(distance_matrix, np.nan) #matrix about intrachain contacts
-    matrix_inter = np.full_like(distance_matrix, np.nan)#matrix about interchain contacts
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
 
-    ### adding the extraction of significant distances
-    # using >=6 to avoid inmediate neighbours -> do not info about folding
-    # using <=12 to exclude atoms that are too far  
-    bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
-        #####PONE EN EL ENUNCIADO ENTRE 6-12!
+    # Define significant folding distances:
+    # Threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
 
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
 
-    # np.equal.outer genera una matriz donde [i,j] es True si chains[i] == chains[j]
-    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) ###es un poco raro, opción B (en teoría es mazo más lenta, por si os gusta más:)
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
 
-    #Lo dejaría de la forma que has puesto. No sabía que existía una función así, pero si es más rápido y eficiente la dejamos. A no ser que el profesor quiera que hasta esa parte la hagamos desde 0. 
-
-    ###OPCIÓN B:
-    # for i in range(len(distance_matrix)):        # Recorre las filas (residuo i)
-    # for j in range(len(distance_matrix)):    # Recorre las columnas (residuo j)
-    #     # Comparamos la cadena del residuo i con la del residuo j
-    #     if chain_per_res[i] == chain_per_res[j]:
-    #         same_chain_bool_matrix[i, j] = True
-    #     else:
-    #         same_chain_bool_matrix[i, j] = False
-
-    # intrachain contacts:
-    matrix_intra[bool_matrix & same_chain_bool_matrix] = distance_matrix[bool_matrix & same_chain_bool_matrix]# has to check two conditions: signficative distances (bool_matrix) and same chain (same_chain_bool_matrix)
-
-    #interchain contacts:
-    matrix_inter[bool_matrix & ~same_chain_bool_matrix] = distance_matrix[bool_matrix & ~same_chain_bool_matrix] # has to check two conditions: signficative distances (bool_matrix) and NOT same chain (~same_chain_bool_matrix)
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
 
     return matrix_intra, matrix_inter
 ```
-
 
 
 
