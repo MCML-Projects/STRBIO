@@ -13,7 +13,27 @@ execute:
 
 ## Structural Metadata and Parsing
 
-The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.
+The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.\_
+
+```{python printing metadata info}
+df_metadata_info = save_metadata(id, filename)
+print(df_metadata_info)
+```
+
+## Distance Matrix
+
+Structural information allows to calculate the distance matrix. The distance matrix contains the distance between carbon-alpha ($C\alpha$) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates $(x, y, z)$ of the atoms.
+
+On the diagonal, the values are equal to 0 because the amino acids being compared are the same. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.
+
+In multimeric proteins, this matrix also reveals the quaternary interface. By observing the distances between residues belonging to different chain identifiers, we can pinpoint the specific regions where subunits pack together. This matrix serves as the mathematical foundation for the binary contact maps, as it allows us to apply specific distance thresholds to filter out significant biological interactions.
+
+```{python printing distance matrix}
+
+dist_matrix = distance_matrix(df_struct_info)
+print(dist_matrix)
+
+```
 
 ## Contact Map Analysis
 
