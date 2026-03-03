@@ -454,7 +454,7 @@ función para generar las matrices de contacto:
 ```{python}
 #| label: contact_matrix_function
 
-def contact_matrix(structural_info, distance_matrix):
+def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distance=12):
     """
     Generate intrachain and interchain contact matrices based on distance thresholds.
 
@@ -464,6 +464,10 @@ def contact_matrix(structural_info, distance_matrix):
         DataFrame containing structural information with at least a "chain" column.
     distance_matrix : np.ndarray
         Matrix of pairwise distances between residues.
+    min_distance : int
+        Minimum distance threshold in Angstroms (default: 6).
+    max_distance : int
+        Maximum distance threshold in Angstroms (default: 12).
 
     Returns
     -------
@@ -483,10 +487,10 @@ def contact_matrix(structural_info, distance_matrix):
     matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
 
     # Define significant folding distances:
-    # Threshold [6, 12] avoids:
+    # Default threshold [6, 12] avoids:
     # >6: immediate neighbors (useless for folding info)
     # <12: atoms that are too far apart  
-    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+    distance_bool_matrix = (distance_matrix >= min_distance) & (distance_matrix <= max_distance)
 
     # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
     same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
@@ -509,26 +513,31 @@ def contact_matrix(structural_info, distance_matrix):
 FUNCION SEPARADA PARA PLOTEAR:
 ```{python}
 #| label: plot_contact_matrix_function
-def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein"):
-    #### significative_distances is the matrix that we are going to plot:
-    chain_per_res = structural_info["chain"].values
-    plt.figure(figsize=(8, 8))
 
-    #cmap='binary' pone los valores con datos en negro y el fondo transparente/blanco
-    #origin="lower" to invert y axis
-    #PLOTTING INTRACHAIN MATRIX -> green
-    plt.imshow(intrachain_matrix, cmap="Greens", interpolation="none", origin="lower")
-    #PLOTTING INTRACHAIN MATRIX -> red
-    plt.imshow(interchain_matrix, cmap="Reds", interpolation="none", origin="lower")
-    #####dato: Al haber NA, el segundo imshow no tapa al primero donde no hay datos
+def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein", filename=None):
     
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
 
-    #Legend
-    #patches of color manually:
+    plt.figure(figsize=(8, 8)) # size of the plot
 
-    blue_patch = mpatches.Patch(color="green", label="Intra-chain contact") #Mejor llamarlo green_patch no? O se llama blue por algo en específico?
+    # Plot Intra-chain contacts in Green
+    plt.imshow(intrachain_matrix, 
+              cmap="Greens", 
+              interpolation="none", # Prevents  (each pixel represents one residue)
+              origin="lower") # origin="lower" to ensure the (0,0) index starts at the bottom-left
+
+    # Plot Inter-chain contacts in Green
+    # Since contact matrices contain NaNs, the second plot won't overwrite the first.
+    plt.imshow(interchain_matrix, 
+              cmap="Reds", 
+              interpolation="none", 
+              origin="lower")
+
+    # Manually creating patches for the legend
+    green_patch = mpatches.Patch(color="green", label="Intra-chain contact") #Mejor llamarlo green_patch no? O se llama blue por algo en específico?
     red_patch = mpatches.Patch(color="red", label="Inter-chain contact")
-    patches = [blue_patch, red_patch]
+    patches = [green_patch, red_patch]
     
     # Adding legend
     #bbox_to_anchor to add legend out of the plot
@@ -556,6 +565,9 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
         plt.axvline(x=idx + 0.5, color='black', linestyle="--")
 
     plt.show()
+
+    if filename:
+        ###guardar en png?
 
 ```
 
