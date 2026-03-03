@@ -10,6 +10,12 @@ THe second one, the 1QRE protein shows
 
 The last one, the 1DGE protein shows 
 
+Comparacion entre estrucutras (monometro, trimero, cuarteto¿?)
+
+Unlike 1RBP, the 1DGF map shows lines running parallel to the main diagonal.
+
+
+
 # Conclusion
 In this project, we have successfully developed a robust computational pipeline to analyze protein structures through distance and contact matrices. By leveraging Python and structural data from the PDB, we achieved the efficient generation of contact maps, providing a clear visual representation of complex three-dimensional folds.
 A critical aspect of this work was the implementation of a coherent distance filtering strategy. By applying thresholds between 6 and 12 Å, we effectively eliminated structural noise, retaining only the biologically significant interactions. This allowed for a precise distinction between intra-chain (tertiary) and inter-chain (quaternary) contacts, pinpointing the exact regions responsible for subunit packing and overall complex stabilization.The results demonstrate that contact maps are powerful tools for structural biology, as they condense thousands of atomic coordinates into identifiable geometric patterns—such as the characteristic signatures of $\alpha$-helices and $\beta$-sheets. 

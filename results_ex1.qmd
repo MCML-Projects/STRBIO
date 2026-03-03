@@ -76,13 +76,30 @@ for id, element in df_conjunto.items():
     plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)#### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
 
-The 1RBP protein shows 
+The 1RBP protein shows discrete segments oriented perpendicularly to the main diagonal. These patterns are the classic "signature" of antiparallel $\beta$-sheets, which in this case constitute the eight-stranded $\beta$-barrel that forms the protein's central cavity.
+
+## REVISAR
+Key observations from the results include:$\beta$-Barrel Symmetry: The regular spacing between the off-diagonal clusters indicates the highly organized hydrogen-bonding network between adjacent $\beta$-strands. Since 1RBP is a closed barrel, the contacts between the first and last strands (the "closure" of the barrel) are also visible as distal signals.Threshold Sensitivity: At a threshold of 8.0 Å, the map effectively filters out long-range noise while retaining the essential backbone-to-backbone interactions. The sparsity of the map (the large white areas) confirms that the interior of the barrel is wide enough that residues on opposite sides of the cavity do not meet the 8.0 Å contact criteria.Loop Dynamics: The smaller, less organized clusters near the diagonal correspond to the loop regions connecting the $\beta$-strands. These areas show a higher density of local contacts, reflecting the tight turns required to reverse the direction of the polypeptide chain at the ends of the barrel.In summary, the 1RBP contact map provides a 2D "fingerprint" of a nearly pure $\beta$-sheet protein, where the absence of parallel diagonal lines (typical of $\alpha$-helices) confirms the lack of significant helical content in the tertiary structure.
 
 
 The 1QRE protein, due to the composition, just green lines appear. This chain has parallel $beta$-sheets and $alpha$-helix. Also there are contacts between $alpha$-helix and $beta$-strands. 
 The parallel $beta$-sheets are represented as parallel lines to the diagonal and far from it. 
-The $alpha$-helix como lineas paralelas cercanas a la diagonal
- 
-La $alpha$-helix and $beta$-strands como perpendicular a la diagonal
+## MIRAR LO DEL TRIMERO
 
-, 1QRE, and 1DGF, effectively mapping their tertiary and quaternary organizations
+The $beta$-strands parallel paralelas lejanas a la diagonal. 
+The $alpha$-helix como lineas paralelas cercanas a la diagonal
+The $alpha$-helix and $beta$-strands como perpendicular a la diagonal
+
+1DGF ->"The contact map for 1DGF reveals a more complex architectural pattern compared to the purely $\beta$-sheet structure of 1RBP. As a member of the periplasmic binding protein family, 1DGF exhibits an $\alpha/\beta$ fold, which is clearly reflected in the matrix.
+
+## REVISAR
+
+The most notable features in this map are:
+
+Parallel $\beta$-sheets:  This indicates the presence of a central parallel $\beta$-sheet, a hallmark of the Rossmann-like fold found in many sugar-binding proteins.
+
+$\alpha$-Helical signatures: Thickened, dense regions immediately adjacent to the main diagonal represent the local $(i, i+4)$ contacts characteristic of $\alpha$-helices that pack against the central $\beta$-strands.
+
+Domain Organization: The map displays two distinct 'blocks' or clusters of contacts, corresponding to the two-domain structure of the protein. These domains are connected by flexible hinge regions, which appear as areas with fewer long-range contacts between the two main diagonal clusters.
+
+
