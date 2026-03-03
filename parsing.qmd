@@ -36,7 +36,7 @@ DUDA: me pone en la web que puso lucía que las posibles salidas son directament
 200 o 404, eso es que no puede haber más?
 
 ```{python}
-#| label: extract_metadata_function
+#| label: extract_join_metadata_function
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
     """
     Extract values from a metadata dictionary and join them into a string.
@@ -138,7 +138,7 @@ def handle_API_error(id, status_code = None, flag_timeout = False):
 ```
 
 ```{python}
-#| label: get_metadata_function
+#| label: get_metadata_info_function
 
 def get_metadata_info(pdb_id):
     """
@@ -255,18 +255,19 @@ def get_metadata_info(pdb_id):
 
 
 ```{python}
-#| label: metadata_to_csv_function
+#| label: save_metadata_function
 
-def save_metadata_csv(pdb_id, filename):
+def save_metadata(pdb_id, filename=None):
     """
-    Extracts metadata from PDB ID via get_metadata_info function
-    Stores the results in a pandas DataFrame and writes it to a CSV file.
+    Extracts metadata from PDB ID via get_metadata_info function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
     
     Parameters
     ----------
     pdb_id : str
         PDB ID to be parsed.
-    filename : str
+    filename : str, optional
         The output CSV file path where metadata will be saved.
     
     Returns
@@ -279,11 +280,11 @@ def save_metadata_csv(pdb_id, filename):
 
     # Pass as a list to avoid "Scalar values" index error in Pandas
     df = pd.DataFrame([metadata_info])
-
-    # Export the DataFrame to a CSV file
-    df.to_csv(filename, index=False) # index=False to prevent writing row numbers
     
-    print(f"Metadata for {pdb_id} successfully saved to {filename}")
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(filename, index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
     return df
 ```
@@ -403,78 +404,105 @@ Generamos la matriz de distancias
 ```{python}
 #| label: distance_matrix_function
 
-def distance_matrix(df):
+def distance_matrix(df_structural_info):
     """
-    docstring
+    Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.
+
+    Parameters
+    ----------
+    df_structural_info : pandas.DataFrame
+        A dataframe containing structural information with columns:
+                chain / residue_number / amino_acid / x / y / z
+    Returns
+    -------
+    distance_matrix : numpy.ndarray
+        A square symmetric matrix of shape (n, n) where n is the number of CA atoms.
+        Each element [i, j] contains the Euclidean distance between CA atoms i and j in angstroms.
+        Diagonal elements are zero.
     """
-    size = N = len(df) # Matriz size = protein's length
-    M = np.zeros((N,N)) # Create an empty matrix
+    # Matrix size corresponds to the number of residues/atoms
+    size = len(df_structural_info) 
+    # Initialize a square matrix of zeros
+    distance_matrix = np.zeros((size, size)) 
 
-    # Extract the xyz coordinates from the dataframe, they are a list of the xyz coordinates as a list for each CA [[x,y,z]]
-    coordinates = df[["x","y","z"]].values 
+    # Extract xyz coordinates as a NumPy array (each row is [x, y, z])
+    coordinates = df_structural_info[["x","y","z"]].values 
 
-    for row, coord1 in enumerate(coordinates): # xyz from reference CA (row)
-        for column, coord2 in enumerate(coordinates): # xyz from the other CA (column)
+    # Iterate through each pair of coordinates to calculate distances
+    for row, coord1 in enumerate(coordinates): # Reference coordinate
+        for column, coord2 in enumerate(coordinates): # Comparison coordinate
 
+            # Calculate the difference in each dimension
             dx = coord2[0] - coord1[0]
             dy = coord2[1] - coord1[1]
             dz = coord2[2] - coord1[2]
 
-            distance = math.sqrt(math.pow(dx,2) + math.pow(dy,2) + math.pow(dz,2))
+            # Apply the 3D distance formula: sqrt(dx^2 + dy^2 + dz^2)
+            distance = math.sqrt(math.pow(dx, 2) + math.pow(dy, 2) + math.pow(dz, 2))
 
-            M[row,column] = distance # Fill the cell in matrix
+            # Store the result in the corresponding matrix cell
+            distance_matrix[row,column] = distance 
 
-    return M
-
+    return distance_matrix
 ```
 
 3. Write a function for plotting the corresponding contact map for each structure, using a standard contact threshold (between 6-12 Å) and different colors for different contacts (intra- and interchain).
 
 función para generar las matrices de contacto:
 -intra e inter chain
+
 ```{python}
 #| label: contact_matrix_function
 
 def contact_matrix(structural_info, distance_matrix):
     """
-    docstring
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
     """
+    # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
 
-    # Initialize matrices with NaNs so they aren't plotted
-    matrix_intra = np.full_like(distance_matrix, np.nan) #matrix about intrachain contacts
-    matrix_inter = np.full_like(distance_matrix, np.nan)#matrix about interchain contacts
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
 
-    ### adding the extraction of significant distances
-    # using >=6 to avoid inmediate neighbours -> do not info about folding
-    # using <=12 to exclude atoms that are too far  
-    bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
-        #####PONE EN EL ENUNCIADO ENTRE 6-12!
+    # Define significant folding distances:
+    # Threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
 
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
 
-    # np.equal.outer genera una matriz donde [i,j] es True si chains[i] == chains[j]
-    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) ###es un poco raro, opción B (en teoría es mazo más lenta, por si os gusta más:)
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
 
-    #Lo dejaría de la forma que has puesto. No sabía que existía una función así, pero si es más rápido y eficiente la dejamos. A no ser que el profesor quiera que hasta esa parte la hagamos desde 0. 
-
-    ###OPCIÓN B:
-    # for i in range(len(distance_matrix)):        # Recorre las filas (residuo i)
-    # for j in range(len(distance_matrix)):    # Recorre las columnas (residuo j)
-    #     # Comparamos la cadena del residuo i con la del residuo j
-    #     if chain_per_res[i] == chain_per_res[j]:
-    #         same_chain_bool_matrix[i, j] = True
-    #     else:
-    #         same_chain_bool_matrix[i, j] = False
-
-    # intrachain contacts:
-    matrix_intra[bool_matrix & same_chain_bool_matrix] = distance_matrix[bool_matrix & same_chain_bool_matrix]# has to check two conditions: signficative distances (bool_matrix) and same chain (same_chain_bool_matrix)
-
-    #interchain contacts:
-    matrix_inter[bool_matrix & ~same_chain_bool_matrix] = distance_matrix[bool_matrix & ~same_chain_bool_matrix] # has to check two conditions: signficative distances (bool_matrix) and NOT same chain (~same_chain_bool_matrix)
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
 
     return matrix_intra, matrix_inter
 ```
-
 
 
 
@@ -536,6 +564,7 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 ## Para que funcione todo:
 
 ```{python}
+
 pdb_list = ["1RBP"]
 # pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
@@ -544,7 +573,7 @@ for id in pdb_list:
     filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}.pdb"
 
     #dataframe con los metadatos -> df_metadata_info
-    df_metadata_info = save_metadata_csv(id, filename)
+    df_metadata_info = save_metadata(id, filename)
 
     #dataframe con la info estructural -> df_struct_info
     df_struct_info = get_structural_info(id)
