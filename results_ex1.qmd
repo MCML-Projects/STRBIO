@@ -35,6 +35,20 @@ print(dist_matrix)
 
 ```
 
+To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained.
+
+Through the plot_contact_matrix function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein's tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.
+
+This dual-matrix approach allows for a clear visual and numerical distinction between the folding of individual subunits and the stabilization of the overall protein complex.
+
+```{python print intra and inter contact matrixces}
+intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+print("INTRA-CHAIN CONTACT MATRIX")
+print(intra_contact_matrix)
+print("INTER-CHAIN CONTACT MATRIX")
+print(inter_contact_matrix)
+```
+
 ## Contact Map Analysis
 
 The generated contact maps provide a spatial representation of the protein's fold and quaternary structure using a distance threshold of 6–12 Å. The visualization distinguishes between two fundamental types of interactions:
