@@ -18,13 +18,12 @@ date: 04/03/2026
 [Describir que los hemos sacado de lo que nos ha dado el profesor pero añadir algo más sobre las proteínas, de donde salen, info principal de la página de PDB, etc.]
 
 ## Parsing PDB Files
-[Explicar el objetivo de esta función y describir las partes más importantes del código. Incluso por simplificar se puede meter una tabla con metadato -> de donde se extrae -> parte del código que lo hace]
 
 The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @parse_pdb_function.
 
 The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
 
-The function defined as @parse_pdb_function performs two independent queries to the RCSB PDB REST API, one at the structural level (core/entry) and another at the polymer entity level (polymer_entity). This separation allows us to access both the experimental details of the protein and the specific information related to it. 
+The function defined as @parse_pdb_function performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
 
 In first place, the function implements a basic system of error handling to ensure that the queries are successful. It handles errors due to timeouts and inexistent entries (HTTP status code 404).
 
