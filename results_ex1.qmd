@@ -31,6 +31,7 @@ In multimeric proteins, this matrix also reveals the quaternary interface. By ob
 ```{python printing distance matrix}
 
 dist_matrix = distance_matrix(df_struct_info)
+print("DISTANCE MATRIX")
 print(dist_matrix)
 
 ```
@@ -74,5 +75,5 @@ for id, element in df_conjunto.items():
     num_chains = element["chain"].nunique()
     print(f"Number of chains: {num_chains}")
     m_dist = distance_matrix(element) 
-    plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
+    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)#### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
