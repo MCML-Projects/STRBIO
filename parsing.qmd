@@ -36,7 +36,7 @@ DUDA: me pone en la web que puso lucía que las posibles salidas son directament
 200 o 404, eso es que no puede haber más?
 
 ```{python}
-#| label: extract_metadata_function
+#| label: extract_join_metadata_function
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
     """
     Extract values from a metadata dictionary and join them into a string.
@@ -138,7 +138,7 @@ def handle_API_error(id, status_code = None, flag_timeout = False):
 ```
 
 ```{python}
-#| label: get_metadata_function
+#| label: get_metadata_info_function
 
 def get_metadata_info(pdb_id):
     """
@@ -255,18 +255,19 @@ def get_metadata_info(pdb_id):
 
 
 ```{python}
-#| label: metadata_to_csv_function
+#| label: save_metadata_function
 
-def save_metadata_csv(pdb_id, filename):
+def save_metadata(pdb_id, filename=None):
     """
-    Extracts metadata from PDB ID via get_metadata_info function
-    Stores the results in a pandas DataFrame and writes it to a CSV file.
+    Extracts metadata from PDB ID via get_metadata_info function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
     
     Parameters
     ----------
     pdb_id : str
         PDB ID to be parsed.
-    filename : str
+    filename : str, optional
         The output CSV file path where metadata will be saved.
     
     Returns
@@ -279,11 +280,11 @@ def save_metadata_csv(pdb_id, filename):
 
     # Pass as a list to avoid "Scalar values" index error in Pandas
     df = pd.DataFrame([metadata_info])
-
-    # Export the DataFrame to a CSV file
-    df.to_csv(filename, index=False) # index=False to prevent writing row numbers
     
-    print(f"Metadata for {pdb_id} successfully saved to {filename}")
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(filename, index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
     return df
 ```
@@ -536,6 +537,7 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 ## Para que funcione todo:
 
 ```{python}
+
 pdb_list = ["1RBP"]
 # pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
