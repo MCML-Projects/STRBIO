@@ -31,6 +31,9 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 
 ```{python plot_contact_matrix function}
+#| label: fig-contact-maps
+#| echo: true
+#| output: true
 for id, element in df_conjunto.items():
     print(id)
     num_chains = element["chain"].nunique()
