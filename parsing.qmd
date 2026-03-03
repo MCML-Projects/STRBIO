@@ -540,7 +540,7 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
     
-    plt.figure(10,12) # Size of the plot
+    plt.figure(figsize=(10, 12)) # Size of the plot
 
     # Plot Intra-chain contacts in Green       
     plt.imshow(intrachain_matrix, 
@@ -640,6 +640,13 @@ intra_contact, inter_contact = contact_matrix(df_struct, dist, min_distance=0)
     #para plotear la matiz de contacto
 plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
 
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B","C"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B","A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
 # plot_contact_matrix(df_struct2, intra_contact2, inter_contact2, pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\CAMBIO{pdb}")
 ```
 
@@ -665,7 +672,7 @@ plot_contact_matrix(df_struct2, intra_contact2, inter_contact2, pdb_id=pdb, file
 ## Para que funcione todo:
 
 ```{python}
-
+#| include : false
 #pdb_list = ["1RBP"]
 pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
