@@ -546,7 +546,7 @@ for id in pdb_list:
     filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}.pdb"
 
     #dataframe con los metadatos -> df_metadata_info
-    df_metadata_info = save_metadata_csv(id, filename)
+    df_metadata_info = save_metadata(id, filename)
 
     #dataframe con la info estructural -> df_struct_info
     df_struct_info = get_structural_info(id)
