@@ -533,40 +533,32 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 
 4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
 
-
+## Para que funcione todo:
 
 ```{python}
 pdb_list = ["1RBP"]
 # pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
+    ###ruta para guradar donde querais
+    # hay qu eañadir la r para que cambie las \ a / (o cambiarlas a mano)
     filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}.pdb"
+
+    #dataframe con los metadatos -> df_metadata_info
     df_metadata_info = save_metadata_csv(id, filename)
 
+    #dataframe con la info estructural -> df_struct_info
     df_struct_info = get_structural_info(id)
 
+    #matriz de distancias -> dist_matrix
     dist_matrix = distance_matrix(df_struct_info)
 
+    #matriz de contacto: intracadena (intra_contact_matrix) e intercadena (inter_contact_matrix)
     intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
 
+    #para plotear la matiz de contacto
     plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)
+    ###IDEA PODRÍAMOS GUARDAR LA IMAGEN EN UN .JPG EN EL DIRECTORIO!!!
 ```
-# Prueba
 
 
 
-# Try for every protein
-pdb_list = ["1RBP", "1QRE", "1DGF"]
-df_conjunto = {}
-for protein in pdb_list:
-    df_conjunto[protein] = get_structural_info(protein)
-
-
-
-#Lo hace todo
-
-for id, element in df_conjunto.items():
-    print(id)
-    num_chains = element["chain"].nunique()
-    print(f"Number of chains: {num_chains}")
-    m_dist = distance_matrix(element) 
-    plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
