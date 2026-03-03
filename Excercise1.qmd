@@ -348,7 +348,22 @@ def save_metadata_csv(pdb_id, filename):
     return df
 ```
 
-## Metadata Extraction
+## Structural Infrormation Extraction and Distance Matrix Calculation
+
+To understand how a protein folds and how its redidues interact with each other, it is needed to extract the spatial coordinates of the aminoacids. Then it is possible to calculate the pairwise distances between them.
+
+PDB stablished a text standard  and human readable format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of information, they are fixed register lines with specific fields. The file start with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. Then, there is a section with the atomic coordinates, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a section with the connectivity information, which describes how the atoms are connected to form residues and chains.
+
+To extract the mentioned data, we have implemented the function @get_structural_info_function, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+
+The function also, traduce the aminoacid three-letter code to one-letter code, through a mapping dictionary. 
+
+Finally, the function extract the chain, number of residue and the cartesian coordinates (x, y, z), and return a dataframe that will be used for the subsequent distance and contact map calculations.
+
+- FALTA AÑADIR FUNCIONES AUXILIARES QUE USE
+- FALTA AÑADIR EL CÁLCULO DE LAS DISTANCAS 
+- FALTA AÑADIR EL CÓDIGO
+
 
 ## Distance and Contact Map Calculations
 
