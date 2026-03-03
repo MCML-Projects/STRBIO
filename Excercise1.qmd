@@ -31,7 +31,6 @@ The main objective of this project is to implement computational functions to:
 # Methods
 
 ## Data Collection
-[Describir que los hemos sacado de lo que nos ha dado el profesor pero añadir algo más sobre las proteínas, de donde salen, info principal de la página de PDB, etc.]
 
 RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes. 
 
@@ -39,9 +38,9 @@ Each protein in this database is identified with a unique four-character alphanu
 
 The structures analyzed in this project correspond to the following proteins:
 
-- Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: *1RBP*)
-- Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: *1QRE*)
-- Catalase (*Homo sapiens*, PDB ID: *1DGF*)
+- **Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: *1RBP*)**, which is involved in retinol transport in humans.
+- **Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: *1QRE*)**, which regulates pH by catalyzing the reaction between $CO_2$ and $H_2O$ to produce bicarbonate and protons.
+- **Catalase (*Homo sapiens*, PDB ID: *1DGF*)**, which cells from oxidative damage by decomposing $H_2O_2$ into water and oxygen.
 
 ## Parsing PDB Files
 
@@ -56,7 +55,7 @@ In first place, the function implements a basic system of error handling to ensu
 Once the queries are successful, the function extracts the relevant information from the JSON responses:
 
 ```{python}
-import panda as pd
+import pandas as pd
 
 table_info = pd.DataFrame({
     "Metadata": ["PDB ID", "Protein Name", "Source Organism", "Determination Method", "Authors", "Release Date", "Resolution", "Number of Peptide Chains", "Number of Other Molecules"],
