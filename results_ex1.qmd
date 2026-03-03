@@ -1,0 +1,137 @@
+# Results
+
+## Structural Metadata and Parsing
+
+The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.
+
+## Contact Map Analysis
+
+The generated contact maps provide a spatial representation of the protein's fold and quaternary structure using a distance threshold of 6–12 Å. The visualization distinguishes between two fundamental types of interactions:
+
+·   Intra-chain Contacts: These represent the internal folding of individual polypeptide chains in green. The clusters observed along the diagonal correspond to secondary structure elements (such as $\alpha$-helices) and tertiary packing within the subunit.
+
+·   Inter-chain Contacts: These highlight the interfaces between different subunits. The presence of red clusters indicates the quaternary organization of the protein, marking specific interaction surfaces that stabilize the complex.
+
+TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
+```{python plot_contact_matrix function}
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches #to insert legend!
+import numpy as np
+def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
+    """Generates a contact map distinguishing between intra-chain and inter-chain interactions.
+
+    This function filters a distance matrix to highlight significant contacts 
+    (between 6 and 12 Å). It uses chain information to plot intra-chain contacts 
+    in green and inter-chain contacts in red. Additionally, it draws dashed 
+    divider lines at the boundaries where chain identifiers change.
+
+    Parameters
+    ---------
+        structural_info (pd.DataFrame): DataFrame containing at least a "chain" 
+            column with the chain identifier for each residue.
+        distance_matrix (np.ndarray): A square (N x N) matrix of Euclidean 
+            distances between the protein's alpha carbons (CA).
+        pdb_id (str, optional): The protein's PDB identifier to be displayed 
+            in the plot title. Defaults to "Protein".
+
+    Returns
+    ---------
+        None: This function does not return any value; it generates and 
+            displays a matplotlib plot.
+
+    Raises
+    ---------
+        KeyError: If the `structural_info` DataFrame is missing the "chain" column.
+        ValueError: If the dimensions of `distance_matrix` do not match the 
+            number of residues in `structural_info`.
+    """
+    chain_per_res = structural_info["chain"].values
+
+    # Initialize matrices with NaNs so they aren't plotted
+    matrix_intra = np.full_like(distance_matrix, np.nan) #matrix about intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)#matrix about interchain contacts
+
+    ### adding the extraction of significant distances
+    # using >=6 to avoid inmediate neighbours -> do not info about folding
+    # using <=12 to exclude atoms that are too far  
+    bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+        #####PONE EN EL ENUNCIADO ENTRE 6-12!
+
+
+    # np.equal.outer genera una matriz donde [i,j] es True si chains[i] == chains[j]
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) ###es un poco raro, opción B (en teoría es mazo más lenta, por si os gusta más:)
+
+    #Lo dejaría de la forma que has puesto. No sabía que existía una función así, pero si es más rápido y eficiente la dejamos. A no ser que el profesor quiera que hasta esa parte la hagamos desde 0. 
+
+    ###OPCIÓN B:
+    # for i in range(len(distance_matrix)):        # Recorre las filas (residuo i)
+    # for j in range(len(distance_matrix)):    # Recorre las columnas (residuo j)
+    #     # Comparamos la cadena del residuo i con la del residuo j
+    #     if chain_per_res[i] == chain_per_res[j]:
+    #         same_chain_bool_matrix[i, j] = True
+    #     else:
+    #         same_chain_bool_matrix[i, j] = False
+
+    # intrachain contacts:
+    matrix_intra[bool_matrix & same_chain_bool_matrix] = distance_matrix[bool_matrix & same_chain_bool_matrix]# has to check two conditions: signficative distances (bool_matrix) and same chain (same_chain_bool_matrix)
+
+    #interchain contacts:
+    matrix_inter[bool_matrix & ~same_chain_bool_matrix] = distance_matrix[bool_matrix & ~same_chain_bool_matrix] # has to check two conditions: signficative distances (bool_matrix) and NOT same chain (~same_chain_bool_matrix)
+
+
+    #### significative_distances is the matrix that we are going to plot:
+
+    plt.figure(figsize=(8, 8))
+
+    #cmap='binary' pone los valores con datos en negro y el fondo transparente/blanco
+    #origin="lower" to invert y axis
+    #PLOTTING INTRACHAIN MATRIX -> green
+    plt.imshow(matrix_intra, cmap="Greens", interpolation="none", origin="lower")
+    #PLOTTING INTRACHAIN MATRIX -> red
+    plt.imshow(matrix_inter, cmap="Reds", interpolation="none", origin="lower")
+    #####dato: Al haber NA, el segundo imshow no tapa al primero donde no hay datos
+    
+
+    #Legend
+    #patches of color manually:
+
+    blue_patch = mpatches.Patch(color="green", label="Intra-chain contact") #Mejor llamarlo green_patch no? O se llama blue por algo en específico?
+    red_patch = mpatches.Patch(color="red", label="Inter-chain contact")
+    patches = [blue_patch, red_patch]
+    
+    # Adding legend
+    #bbox_to_anchor to add legend out of the plot
+    plt.legend(handles=patches, loc="upper right", bbox_to_anchor=(1.35, 1))
+ 
+    #Title and labels
+    plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
+    plt.xlabel("Residue Index", fontsize=12)
+    plt.ylabel("Residue Index", fontsize=12)
+    
+    ####################### EXTRA (ya me decís que opinais)
+    # Líneas divisorias de cadenas
+    idx_changes = np.where(chain_per_res[:-1] != chain_per_res[1:])[0] #dice los indx donde cambia la cadena (va comparando quitando el último residuo (chain_per_res[:-1] y quitando el primero (chain_per_res[1:])))
+    #OPCIÓN B POR SI LO VEIS MAL:
+    # using the first row of the prev matrix generated
+    # first_row = same_chain_bool_matrix[0]
+    # idx_changes = []
+    # for i in range(len(first_row) - 1):
+    #     if first_row[i] != first_row[i+1]:
+    #         idx_changes.append(i)
+    
+    for idx in idx_changes:
+        ### adding 0.5: El residuo 0 ocupa el espacio que va desde -0.5 hasta 0.5. Su centro está en 0; luego así no tapamos el dato!
+        plt.axhline(y=idx + 0.5, color="black", linestyle="--")
+        plt.axvline(x=idx + 0.5, color='black', linestyle="--")
+
+    plt.show()
+
+#Lo hace todo
+
+for id, element in df_conjunto.items():
+    print(id)
+    num_chains = element["chain"].nunique()
+    print(f"Number of chains: {num_chains}")
+    m_dist = distance_matrix(element) 
+    plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
+```
