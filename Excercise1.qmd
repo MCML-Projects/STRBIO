@@ -20,25 +20,28 @@ date: 04/03/2026
 ## Parsing PDB Files
 [Explicar el objetivo de esta función y describir las partes más importantes del código. Incluso por simplificar se puede meter una tabla con metadato -> de donde se extrae -> parte del código que lo hace]
 
-The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function *parse_pdb*.
+The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @parse_pdb_function.
 
 The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
 
-The function defined as *parse_pdb* performs two independent queries to the RCSB PDB REST API, one at the structural level (core/entry) and another at the polymer entity level (polymer_entity). This separation allows us to access both the experimental details of the protein and the specific information related to it. 
+The function defined as @parse_pdb_function performs two independent queries to the RCSB PDB REST API, one at the structural level (core/entry) and another at the polymer entity level (polymer_entity). This separation allows us to access both the experimental details of the protein and the specific information related to it. 
 
 In first place, the function implements a basic system of error handling to ensure that the queries are successful. It handles errors due to timeouts and inexistent entries (HTTP status code 404).
 
 Once the queries are successful, the function extracts the relevant information from the JSON responses:
-- **PDB ID**: Unique identifier for the protein structure.
-- **Protein Name**: The name of the protein.
-- **Source Organism**: The organism from which the protein was derived.
-- **Determination Method**: The method used to determine the protein structure (e.g., X-ray crystallography, NMR spectroscopy).
-- **Authors**: The researchers who contributed to the determination of the structure.
-- **Resolution**: The resolution of the structure, if applicable.
-- **Number of Peptide Chains**: The number of peptide chains present in the structure.
-- **Number of Other Molecules**: The number of other molecules (e.g., ligands, water) present in the structure.
 
-There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function *extract_join_metadata* is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
+```{python}
+import panda as pd
+
+table_info = pd.DataFrame({
+    "Metadata": ["PDB ID", "Protein Name", "Source Organism", "Determination Method", "Authors", "Release Date", "Resolution", "Number of Peptide Chains", "Number of Other Molecules"],
+    "Description": ["Unique identifier for the protein structure", "The name of the protein", "The organism from which the protein was derived", "The method used to determine the protein structure (e.g., X-ray crystallography, NMR spectroscopy)", "The researchers who contributed to the determination of the structure", "The release date of the structure", "The resolution of the structure, if applicable", "The number of peptide chains present in the structure", "The number of other molecules (e.g., ligands, water) present in the structure"],
+    "Source (API JSON field)": ["rcsb_id", "rcsb_polymer_entity.pdbx_description", "rcsb_entity_source_organism", "exptl.method", "rcsb_authors", "rcsb_accession_info.initial_release_date", "rcsb_entry_info.resolution_combined", "rcsb_entry_info.polymer_entity_count_protein", "rcsb_entry_info.nonpolymer_entity_count"]
+})
+
+```
+
+There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function @extract_metadata_function is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
 
 All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. 
 
