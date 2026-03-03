@@ -18,12 +18,19 @@ He hecho este códgio de abajo basado en lo de Lucía de arriba:
 
 aun así, para la entrega yo no pondría los códigos de dentro del diccionario de metadata así, sino que lo expandiría un poco más (igual extraer todo por separado con más pasos y luego meterlo en metadata?) para que quede algo más claro
 
-
+```{python}
+#| label: setup-libraries
+#| message: false
+#| warning: false
+#| 
+import requests
+import pandas as pd
+```
 
 DUDA: me pone en la web que puso lucía que las posibles salidas son directamente:
 200 o 404, eso es que no puede haber más?
 
-```{python extract_join_metadata}
+```{python}
 #| label: extract_metadata_function
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
     """
@@ -66,7 +73,66 @@ def extract_join_metadata(data_dict, metadata_key, subkey=None):
 ```
 
 
-```{python get_metadata_function}
+```{python}
+#| label: handle_API_error_function
+
+def handle_API_error(id, status_code = None, flag_timeout = False):
+    """
+    Handles HTTP request errors or timeouts and prints informative messages in
+    order to centralize the management of API request errors.
+
+    Parameters
+    ----------
+    id : str
+        PDB ID queried in the request.
+    status_code : int
+        HTTP status code returned by the request. 
+        None by default (in case of timeout error).
+    flag_timeout : bool
+        Indicates whether the request failed due to a timeout.
+        If True, the status_code is ignored.
+        alse by default.
+
+    Returns
+    -------
+        bool (True)
+            True if the request was successful (status code 200).
+            None returned for any error or timeout condition.
+    """
+    if flag_timeout: # If a timeout occurred, skip all other checks
+        print(f"[408] Timeout error for ID: {id}.")
+        
+    else:
+        if status_code == 200: # If the request was successful, returns True
+            return True
+        
+        elif status_code == 301 or status_code == 302:
+            # Resource has been permanently or temporarily moved
+            print(f"[301] or [302] The object was moved to other route")
+
+        elif status_code == 400:
+            # Request processed but considered unsuccessful
+            print(f"[400] Not valid ID: {id}")
+
+        elif status_code == 404:
+            # Request processed but no result was obtained
+            print(f"[404] Result not found for ID: {id}")
+
+        elif status_code == 429:
+            # Request rejected due to request rate limits
+            print(f"[429] Error: Too many requests.")
+
+        elif status_code == 500 or status_code == 503:
+            # Request failed due to internal server issues
+            print("[500] or [503] Internal Server Error")
+
+        else: # For any other error status code
+            print(f"Error: {status_code}")
+        
+        return # For all cases except status_code == 200, function returns None
+```
+
+```{python}
 #| label: get_metadata_function
 
 import requests
@@ -106,12 +172,14 @@ def get_metadata_info(pdb_id):
                                       timeout = 100) 
 
     except requests.exceptions.Timeout: # Handling Timeout Error
-        print(f"Timeout error for ID: {pdb_id}.")
+        handle_API_error(id, flag_timeout = True)
         return
     
     # Validate that PDB ID exists in both endopoints
-    if response_entry.status_code == 404 or response_entity.status_code == 404:
-        print(f"[404] Result not found for ID: {pdb_id}")
+    flag_entry = handle_API_error(pdb_id, status_code = response_entry.status_code)
+    flag_entity = handle_API_error(pdb_id, status_code = response_entity.status_code)
+
+    if not flag_entry or not flag_entity:
         return
     
     # Execution continues only if a 200 OK status is received
@@ -183,9 +251,10 @@ def get_metadata_info(pdb_id):
 
 
 
-```{python save_metadata_csv}
+```{python}
 #| label: metadata_to_csv_function
 
+import pandas as pd
 def save_metadata_csv(pdb_id, filename):
     """
     Extracts metadata from PDB ID via get_metadata_info function
@@ -220,59 +289,40 @@ def save_metadata_csv(pdb_id, filename):
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
 
 
-(Lo he intentado hacer sin API porque gema me ha rallado con el enunciado y creo que modesto se refiere a que lo hagamos así ⬇⬇⬇⬇⬇)
+```{python}
+#| label: get_structural_info_function
 
-Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
-```{python CheckPROTEIN}
-def CheckPROTEIN(Protein_sequence):
-    '''
-    This function checks if the sequence is compose by aminoacids
-    Input: Sequence
-    Output: Ambiguous nucleotides
-    '''
-    IsPROTEIN=False
-    length=0
-    NonCanonicalAA=[]
-    while IsPROTEIN==False:
-        for aminoacid in Protein_sequence:
-            length+=1
-            if aminoacid not in ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']:
-
-                NonCanonicalAA.append('X')
-            else: 
-                NonCanonicalAA.append(aminoacid)
-
-            if length==len(Protein_sequence):
-                IsPROTEIN=True
-    CheckedProteinSequence=''.join(NonCanonicalAA)
-
-    return CheckedProteinSequence
-```
-
-
-```{python download_pdb_files}
-import requests
-import pandas as pd
 def get_structural_info(pdb_id):
     """
     docstring
     """
-
+    # Define endpoints for ****
+    url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    
     try:
-        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
-        response = requests.get(url, timeout = 100)
+        response = requests.get(url, 
+                               timeout = 100)
     
     except requests.exceptions.Timeout:
-        print(f"[408] Timeout error for ID: {pdb_id}.")
+        handle_API_error(id, flag_timeout = True)
         return
 
+    # Handle HTTP status code with handle_API_error and check if the request was successful
+    Flag_species = handle_API_error(id, status_code = response_species.status_code)
+    
+    if not Flag_species:  # Proceed only if the request was successful (Flag_species: True)
+        return
     if response.status_code == 404:
         print(f"[404] Result not found for ID: {pdb_id}")
         return
     ### creo que hay q añadir más handling errors en este caso
     # creo que sí puede haber más respuestas que 200 / 404 
     # (tenemos una función ya hecha para handling errors de apis de bases de datos biomed si eso la pego))
-
+    aa_map = {
+    'ALA': 'A', 'ARG': 'R', 'ASN': 'N', 'ASP': 'D', 'CYS': 'C', 'GLN': 'Q', 'GLU': 'E', 
+    'GLY': 'G', 'HIS': 'H', 'ILE': 'I', 'LEU': 'L', 'LYS': 'K', 'MET': 'M', 'PHE': 'F', 
+    'PRO': 'P', 'SER': 'S', 'THR': 'T', 'TRP': 'W', 'TYR': 'Y', 'VAL': 'V'
+}
     #L: Me gusta mucho como está hecha la función, lo dejaría tal cual. Pero si es verdad que habría que comprobar lo de los errores para todas las llamadas a la API. 
     if response.status_code == 200:
         pdb_data = response.text #.text because is a .pdb file
@@ -284,6 +334,10 @@ def get_structural_info(pdb_id):
                 ###(EN PDB NO SE SEPARA POR TABULADORES VAYA, son columnas fijas)
                 atom_name = line[12:16].strip() #strip to delete blank spaces
                 if atom_name == "CA": # If it is CA
+                    # --- EXTRAER AMINOÁCIDO ---
+                    aa_name_3 = line[17:20].strip() # Columna fija para el nombre del residuo
+                    aa_name_1 = aa_map.get(res_name_3, "X") # 'X' si no es un AA estándar
+
                     coord_x = line[30:38].strip()
                     coord_y = line[38:46].strip()
                     coord_z = line[46:54].strip()
@@ -319,6 +373,31 @@ for protein in pdb_list:
 justificacion de porqué hay que acceder así:
 El formato PDB es un estándar de columnas fijas (basado en las antiguas tarjetas perforadas). Esto significa que no importa cuántos espacios haya; lo que importa es la posición exacta (el índice) de cada carácter en la línea.
 
+```{python check_canonical_aa}
+def check_canonical_aa(sequence):
+    '''
+    This function checks if the sequence is compose by aminoacids
+    Input: Sequence
+    Output: Ambiguous nucleotides
+    '''
+    IsPROTEIN=False
+    length=0
+    NonCanonicalAA=[]
+    while IsPROTEIN==False:
+        for aminoacid in Protein_sequence:
+            length+=1
+            if aminoacid not in ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']:
+
+                NonCanonicalAA.append('X')
+            else: 
+                NonCanonicalAA.append(aminoacid)
+
+            if length==len(Protein_sequence):
+                IsPROTEIN=True
+    CheckedProteinSequence=''.join(NonCanonicalAA)
+
+    return CheckedProteinSequence
+```
 
 
 Generamos la matriz de distancias
