@@ -336,8 +336,12 @@ def save_metadata_csv(pdb_id, filename):
     # Pass as a list to avoid "Scalar values" index error in Pandas
     df = pd.DataFrame([metadata_info])
 
+    
     # Export the DataFrame to a CSV file
-    df.to_csv(filename, index=False) # index=False to prevent writing row numbers
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
     
     print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
@@ -353,6 +357,63 @@ def save_metadata_csv(pdb_id, filename):
 \[
 d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
 \]
+
+To generate the contact matrix for each protein, we have create a python function which plot the contact between residues based on distance threshold (6-12 A) and differences between intra or interchain contacts. 
+
+It is 
+
+```{python}
+#| label: contact_matrix_function
+
+def contact_matrix(structural_info, distance_matrix):
+    """
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
+    """
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
+
+    # Define significant folding distances:
+    # Threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
+
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
+
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
+
+    return matrix_intra, matrix_inter
+```
 
 ---
 
