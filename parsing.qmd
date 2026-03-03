@@ -140,21 +140,25 @@ def handle_API_error(id, status_code = None, flag_timeout = False):
 ```{python}
 #| label: get_metadata_info_function
 
-def get_metadata_info(pdb_id):
+def get_metadata_info(pdb_id, filename=None):
     """
     Parse a PDB (Protein Data Bank) file and extract metadata information.
     Extracts and formats some metadata via extract_join_metadata function.
     Handles API errors via handle_API_error function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
     
     Parameters
     ----------
     pdb_id : str
         Unique identifier for the PDB file.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
     
     Returns
     -------
-    metadata : dict
-        Dictionary containing PDB metadata.
+    df : pd.DataFrame
+        A pandas DataFrame containing the metadata.
         Or None if an error occurs.
     """
     # Define endpoints for RCSB PDB Data API 
@@ -249,45 +253,17 @@ def get_metadata_info(pdb_id):
         "Number of Peptide Chains": num_chains,
         "Number of Other Molecules": molecules
     }
-    return metadata
-```
-
-
-
-```{python}
-#| label: save_metadata_function
-
-def save_metadata(pdb_id, filename=None):
-    """
-    Extracts metadata from PDB ID via get_metadata_info function.
-    Stores the results in a pandas DataFrame.
-    If a path is provided, writes it to a CSV file.
-    
-    Parameters
-    ----------
-    pdb_id : str
-        PDB ID to be parsed.
-    filename : str, optional
-        The output CSV file path where metadata will be saved.
-    
-    Returns
-    -------
-    df : pd.DataFrame
-        A pandas DataFrame containing the metadata.
-    """
-    # Fetch metadata dictionary for the single PDB ID
-    metadata_info = get_metadata_info(pdb_id) 
-
     # Pass as a list to avoid "Scalar values" index error in Pandas
-    df = pd.DataFrame([metadata_info])
-    
+    df = pd.DataFrame([metadata])
+
     if filename:
         # Export the DataFrame to a CSV file
         df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
         print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
 
-    return df
+    return metadata
 ```
+
 
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
 
@@ -295,7 +271,7 @@ def save_metadata(pdb_id, filename=None):
 ```{python}
 #| label: get_structural_info_function
 
-def get_structural_info(pdb_id):
+def get_structural_info(pdb_id, flag_assembly=False, filename=None):
     """
     Retrieve and parse structural information from a PDB (Protein Data Bank) file.
     Extracts backbone data by filtering for Alpha Carbon atoms, as a simplified representation of the protein structure.
@@ -307,7 +283,11 @@ def get_structural_info(pdb_id):
     ----------
     pdb_id : str
         Unique identifier for the PDB file.
-    
+    flag_assembly : bool, optional
+        If true, enables parsing for biological assembly files to handle multimeric structures.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
+
     Returns
     -------
     results_df : pd.DataFrame
@@ -319,8 +299,10 @@ def get_structural_info(pdb_id):
     
         Returns None if the request fails due to timeout or HTTP error.
     """
-    # Define the download endpoint for the raw PDB file
-    url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    if flag_assembly: # Define the download endpoint for the biological assembly file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb1"
+    else: # Define the download endpoint for the raw PDB file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
     
     # Handling with Timeout and Errors 
     try:
@@ -352,9 +334,17 @@ def get_structural_info(pdb_id):
     ############ Structural data extraction ############
 
     results = [] # List to store extracted structural data
-
+    current_model = 0 # If there is more than one model in the .pdb1 file
     for line in pdb_data.split("\n"): # Parse .pdb file line by line
-       
+        
+        if flag_assembly:
+            if line.startswith("MODEL"): # Biological units are separated by "MODEL" records
+                try:
+                    # Extract the model number (columns 11-14)
+                    current_model = int(line[10:14].strip()) 
+                except: # Keep previous model index if parsing fails
+                    pass
+
         if line.startswith("ATOM"): # Processing only atom lines
             # The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)
             # Extract atom name (columns 13-16)
@@ -375,12 +365,18 @@ def get_structural_info(pdb_id):
                 # Extract chain identifier (column 22)
                 chain = line[21:22].strip()
 
+                if current_model > 1:
+                    # Create a unique ID for repeated chains in the assembly
+                    unique_chain = f"{chain}_{current_model}"
+                else:  # Keep original chain ID for the first model
+                    unique_chain = chain
+
                 # Extract residue sequence number (columns 23-26)
                 residue_number = line[22:26].strip() 
                 
                 # Append record to the results list
                 results.append({
-                               "chain": chain,
+                               "chain": unique_chain,
                                "residue_number": residue_number,
                                "amino_acid": aa_name_1,
                                "x": float(coord_x),
@@ -391,8 +387,14 @@ def get_structural_info(pdb_id):
     # Transform data into a df
     results_df = pd.DataFrame(results)
 
+    if filename:
+        # Export the DataFrame to a CSV file
+        results_df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Structural data for {pdb_id} successfully saved to {filename}.csv")
+
     return results_df
 ```
+
 
 justificacion de porqué hay que acceder así:
 El formato PDB es un estándar de columnas fijas (basado en las antiguas tarjetas perforadas). Esto significa que no importa cuántos espacios haya; lo que importa es la posición exacta (el índice) de cada carácter en la línea.
@@ -514,26 +516,45 @@ FUNCION SEPARADA PARA PLOTEAR:
 ```{python}
 #| label: plot_contact_matrix_function
 
-def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein", filename=None):
-    
+def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, chains=None, pdb_id="-", filename=None):
+    """
+    falta docstring
+    """
+    if chains:
+        # Check if all requested chains are present in the structural information
+        available_chains = structural_info["chain"].unique()
+        for chain in chains:
+            if chain not in available_chains:
+                print(f"One or more requested chains are not present.")
+                return
+            
+        # Filter the structural info and get the indices of the rows we keep
+        # This is crucial to also slice the matrices correctly later if they don't match
+        chains_requested_bool_matrix = structural_info["chain"].isin(chains)
+        structural_info = structural_info[chains_requested_bool_matrix]
+                
+        indices = np.where(chains_requested_bool_matrix)[0]
+        intrachain_matrix = intrachain_matrix[np.ix_(indices, indices)]
+        interchain_matrix = interchain_matrix[np.ix_(indices, indices)]
+        
     # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
+    
+    plt.figure(figsize=(10, 12)) # Size of the plot
 
-    plt.figure(figsize=(8, 8)) # size of the plot
-
-    # Plot Intra-chain contacts in Green
+    # Plot Intra-chain contacts in Green       
     plt.imshow(intrachain_matrix, 
-              cmap="Greens_r", 
-              interpolation="none", # Prevents  (each pixel represents one residue)
-              origin="lower") # origin="lower" to ensure the (0,0) index starts at the bottom-left
+              cmap="Greens_r", # Sets the color palette to Reversed Greens
+              interpolation="none", # Prevents blurring; each pixel represents exactly one residue
+              origin="lower") # Places the (0,0) index at the bottom-left corner
 
     # Plot Inter-chain contacts in Green
-    # Since contact matrices contain NaNs, the second plot won't overwrite the first.
+    # Since contact matrices contain NaNs, the second plot won't overwrite the first
     plt.imshow(interchain_matrix, 
-              cmap="Reds", 
+              cmap="Reds_r", 
               interpolation="none", 
               origin="lower")
-
+    
     # Manually creating patches for the legend
     green_patch = mpatches.Patch(color="green", 
                                 label="Intra-chain contact") 
@@ -544,7 +565,7 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     # Adding legend
     plt.legend(handles=patches, # Text of the legend
               loc="upper right", # Place of the legend
-              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
+              bbox_to_anchor=(1.35, 1)) # bbox_to_anchor places legend outside the plot area
  
     # Title and labels
     plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
@@ -562,9 +583,9 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     for each_chain in chain_per_res:
         if each_chain not in unique_chains: 
             unique_chains.append(each_chain)
-            unique_chains_label.append(f"Chain {each_chain}")
+            unique_chains_label.append(f"Chain {each_chain}") # Create labels to plot them
     
-    # Plots the lines between different chains
+    # Draw lines to visually separate the different chains in the matrix
     for idx in idx_changes:
         # Add 0.5 to place the line exactly between the pixels of two residues
         plt.axhline(y=idx + 0.5, color="black", linestyle="--")
@@ -573,15 +594,22 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     # Place the labels of the chain names at the midpoint of each boundary
     ticks = []
     for i in range(len(boundaries) - 1):
-        midpoint = (boundaries[i] + boundaries[i+1]) / 2
-        ticks.append(midpoint)
+        midpoint = (boundaries[i] + boundaries[i+1]) / 2 # Calculate the midpoint of each chain segment
+        ticks.append(midpoint) # Appends ticks
 
-    # Set the ticks and labels on both axes
-    plt.xticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
-    plt.yticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    # Set up secondary axes to display chain labels
+    axes = plt.gca() # Grabs the active plot area
+    sec_xaxis= axes.secondary_xaxis("top") # Attaches a new axis to the top of that area
+    sec_yaxis = axes.secondary_yaxis("right") # Attaches a new axis to the right of that area
+
+    # Assign chain names to the secondary ticks
+    sec_xaxis.set_xticks(ticks)
+    sec_xaxis.set_xticklabels(unique_chains_label, fontsize=10)
     
+    sec_yaxis.set_yticks(ticks)
+    sec_yaxis.set_yticklabels(unique_chains_label, fontsize=10)
+
     plt.tight_layout() # Ensures labels/legend don't get cut off
-    plt.show()
 
     if filename: # Check if a filename was provided to save the image
         # Save the figure as a PNG file
@@ -589,23 +617,71 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
                     dpi=300, # dpi=300 ensures high resolution
                     bbox_inches="tight") # bbox_inches="tight" prevents labels from being cut off
         print(f"Contact plot for {pdb_id} successfully saved to {filename}.png")
+
+    plt.show()
 ```
 
 4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
 
-## Para que funcione todo:
 
 ```{python}
 
+pdb = "1DGF"
+filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}"
+df_metadata = get_metadata_info(pdb, filename)
+df_struct = get_structural_info(pdb)
+# df_struct2 = get_structural_info(pdb, flag_assembly=True)
+dist = distance_matrix(df_struct)
+# dist2 = distance_matrix(df_struct2)
+
+intra_contact, inter_contact = contact_matrix(df_struct, dist, min_distance=0)
+# intra_contact2, inter_contact2 = contact_matrix(df_struct2, dist2, min_distance=0)
+
+    #para plotear la matiz de contacto
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B","C"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","B","A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct, intra_contact, inter_contact, chains=["A","A"], pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+# plot_contact_matrix(df_struct2, intra_contact2, inter_contact2, pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\CAMBIO{pdb}")
+```
+
+
+```{python}
+#| include : false
+pdb = "1QRE"
+filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}"
+df_metadata = get_metadata_info(pdb, filename)
+df_struct = get_structural_info(pdb)
+df_struct2 = get_structural_info(pdb, flag_assembly=True)
+dist = distance_matrix(df_struct)
+dist2 = distance_matrix(df_struct2)
+
+intra_contact, inter_contact = contact_matrix(df_struct, dist, min_distance=0)
+intra_contact2, inter_contact2 = contact_matrix(df_struct2, dist2, min_distance=0)
+
+    #para plotear la matiz de contacto
+plot_contact_matrix(df_struct, intra_contact, inter_contact, pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{pdb}")
+
+plot_contact_matrix(df_struct2, intra_contact2, inter_contact2, pdb_id=pdb, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\CAMBIO{pdb}")
+```
+## Para que funcione todo:
+
+```{python}
+#| include : false
 #pdb_list = ["1RBP"]
 pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
     ###ruta para guradar donde querais
     # hay qu eañadir la r para que cambie las \ a / (o cambiarlas a mano)
-    filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}.pdb"
+    filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}"
 
     #dataframe con los metadatos -> df_metadata_info
-    df_metadata_info = save_metadata(id, filename)
+    df_metadata_info = get_metadata_info(id, filename)
 
     #dataframe con la info estructural -> df_struct_info
     df_struct_info = get_structural_info(id)
@@ -617,8 +693,9 @@ for id in pdb_list:
     intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix, min_distance=0)
 
     #para plotear la matiz de contacto
-    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)
+    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id, filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}")
     ###IDEA PODRÍAMOS GUARDAR LA IMAGEN EN UN .JPG EN EL DIRECTORIO!!!
+
 ```
 
 
