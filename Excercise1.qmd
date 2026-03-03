@@ -7,15 +7,24 @@ date: 04/03/2026
 
 # Introduction
 
-Structural bioinformatics use data resources, algorithms and tool to study, analyze, predict and understand biomacromolecular structures. The structural information with high resolution over the biological systems allows the scientific comunity to known its functions and the effects of modifications on it.
+Structural bioinformatics integrates computational methods, data resources and algorithms to study, analyze and predict the three-dimensional organization of biomacromolecules. High-resolution structural information  provides insights into biological function and enables the characterization of molecular effects of mutations, ligand binding and intermolecular interactions.
 
-The proteins are macromoleculues which function is highly related with their structure. The structure of proteins is distinguisehed into four levels, which depends on folding. The folding is due by non-covalent interactions between the atoms of residues of the same molecule, intramolecular, or other molecule, intermolecular. The structural bioinformatics try to characterize 
+Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent interactions between atoms of residues of the same molecule, intramolecular, or other molecules, intermolecular. These interactions include hydrogen bonds, hydrophobic interactions and electrostatic forces. Structural bioinformatics aims to characterize these interactions through computational analysis of experimentally determined or predicted structures.
 
+The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB), which stores three-dimensional structures obtained by X-ray crystallography, nuclear magnetic resonance spectroscopy and cryo-electron microscopy. PDB files contain detailed metadata, experimental information, protein sequences, and three-dimensional atomic coordinates. Through computational analysis, this information can be extracted from these files.
 
+To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the C$\alpha$  of all the residues in a protein. A distance threshold is established to determine if two residues interact or not. Specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
+
+Nowadays, although modelling and structure prediction methods have achieved high levels of accuracy, the analysis of atomic coordinates is still essential to understand the spatial organization of proteins and macromolecular complexes.
 
 
 ## Objective
 
+The main objective of this project is to implement computational functions to:
+
+1. Parse PDB files to extract structural metadata and atomic coordinates.
+2. Compute pairwise distance matrices between C$\alpha$ atoms of protein residues.
+3. Plot contact maps to characterize the structural organization and oligomeric state of the analyzed proteins.
 
 ---
 
@@ -24,11 +33,15 @@ The proteins are macromoleculues which function is highly related with their str
 ## Data Collection
 [Describir que los hemos sacado de lo que nos ha dado el profesor pero añadir algo más sobre las proteínas, de donde salen, info principal de la página de PDB, etc.]
 
-RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is an organization which holds a database of exprimentally determined, and also predicted, tridimensional structures of proteins, nucleic acids and macromolecular complexes. 
+RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes. 
 
-Every protein uploaded in this database is identified with an alphanumeric identifier of 4 characters long. This identifier is used to gain access to each protein's information.
+Each protein in this database is identified with a unique four-character alphanumeric identifier. This identifier allows access to detailed information about the protein, such as atomic coordinates, sequence, experimental methodology and associated metadata.
 
-The tridimensional structures analyzed in this project belongs to the Plasma Retinol-Binding Protein Precursor of *Homo sapiens*, the Carbonic Anhydrase of *Methanosarcina thermophila* and the Catalase of *Homo sapiens*  proteins whose PDB identifier are *1RBP*, *1QRE* and *1DGF*, respectively.
+The structures analyzed in this project correspond to the following proteins:
+
+- Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: *1RBP*)
+- Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: *1QRE*)
+- Catalase (*Homo sapiens*, PDB ID: *1DGF*)
 
 ## Parsing PDB Files
 [Explicar el objetivo de esta función y describir las partes más importantes del código. Incluso por simplificar se puede meter una tabla con metadato -> de donde se extrae -> parte del código que lo hace]
