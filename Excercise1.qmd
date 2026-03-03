@@ -336,15 +336,34 @@ def save_metadata_csv(pdb_id, filename):
     # Pass as a list to avoid "Scalar values" index error in Pandas
     df = pd.DataFrame([metadata_info])
 
+    
     # Export the DataFrame to a CSV file
-    df.to_csv(filename, index=False) # index=False to prevent writing row numbers
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
     
     print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
     return df
 ```
 
-## Metadata Extraction
+## Structural Infrormation Extraction and Distance Matrix Calculation
+
+To understand how a protein folds and how its redidues interact with each other, it is needed to extract the spatial coordinates of the aminoacids. Then it is possible to calculate the pairwise distances between them.
+
+PDB stablished a text standard  and human readable format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of information, they are fixed register lines with specific fields. The file start with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. Then, there is a section with the atomic coordinates, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a section with the connectivity information, which describes how the atoms are connected to form residues and chains.
+
+To extract the mentioned data, we have implemented the function @get_structural_info_function, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+
+The function also, traduce the aminoacid three-letter code to one-letter code, through a mapping dictionary. 
+
+Finally, the function extract the chain, number of residue and the cartesian coordinates (x, y, z), and return a dataframe that will be used for the subsequent distance and contact map calculations.
+
+- FALTA AÑADIR FUNCIONES AUXILIARES QUE USE
+- FALTA AÑADIR EL CÁLCULO DE LAS DISTANCAS 
+- FALTA AÑADIR EL CÓDIGO
+
 
 ## Distance and Contact Map Calculations
 
@@ -353,6 +372,63 @@ def save_metadata_csv(pdb_id, filename):
 \[
 d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
 \]
+
+To generate the contact matrix for each protein, we have create a python function which plot the contact between residues based on distance threshold (6-12 A) and differences between intra or interchain contacts. 
+
+It is 
+
+```{python}
+#| label: contact_matrix_function
+
+def contact_matrix(structural_info, distance_matrix):
+    """
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
+    """
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
+
+    # Define significant folding distances:
+    # Threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
+
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
+
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
+
+    return matrix_intra, matrix_inter
+```
 
 ---
 
