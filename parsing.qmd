@@ -23,26 +23,49 @@ aun así, para la entrega yo no pondría los códigos de dentro del diccionario 
 DUDA: me pone en la web que puso lucía que las posibles salidas son directamente:
 200 o 404, eso es que no puede haber más?
 
-```{python}
-#Función para repetir el paso de extraer la info y unir. 
+```{python extract_join_metadata}
+#| label: extract_metadata_function
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
-    
-    items = data_dict.get(metadata_key, []) #metadata_key is a list
-    extracted_items = []
+    """
+    Extract values from a metadata dictionary and join them into a string.
 
-    if subkey:
-    for item in items: # In case there is more than one item (if there is no one, no error)
-        value = item.get(subkey) # NO second option to avoid
-        if value:
-            extracted_items.append(value)
+    Parameters
+    ----------
+    data_dict : dict
+        Dictionary containing the metadata entries.
+    metadata_key : str
+        Key in `data_dict` whose value should be a list.
+    subkey : str, optional
+        Key to use within each list element.  
+        If `None` the list elements are used directly.
 
+    Returns
+    -------
+    str
+        Comma-separated string of extracted values.
+        "N/A"` if the list is empty or no values were found.
+    """
+    # Retrieve the list of items associated with metadata_key
+    items = data_dict.get(metadata_key, []) # default to an empty list if not found
+
+    extracted_items = [] # empty list
+
+    if subkey: # In case there is a subkey
+        for item in items: # Iterate through items
+            # Get the value for the specific subkey
+            value = item.get(subkey) # NO second arg to avoid list of "N/A"
+            if value: 
+                # If there is a value, it is added to the list
+                extracted_items.append(value)
+   
+    # Return a string (comma-separated) if data was found 
     if extracted_items:
-        return ", ".join(extracted_items) # Convert into str
-    else:
-        return "N/A" #N/A in case there is no item
-    
+        return ", ".join(extracted_items) 
+    else: # Otherwise, return "N/A"
+        return "N/A" 
 ```
-```{python}
+```{python parse_pdb}
+#| label: parse_pdb_function
 import pandas as pd
 import requests
 
