@@ -13,7 +13,42 @@ execute:
 
 ## Structural Metadata and Parsing
 
-The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.
+The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.\_
+
+```{python printing metadata info}
+df_metadata_info = save_metadata(id, filename)
+print(df_metadata_info)
+```
+
+## Distance Matrix
+
+Structural information allows to calculate the distance matrix. The distance matrix contains the distance between carbon-alpha ($C\alpha$) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates $(x, y, z)$ of the atoms.
+
+On the diagonal, the values are equal to 0 because the amino acids being compared are the same. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.
+
+In multimeric proteins, this matrix also reveals the quaternary interface. By observing the distances between residues belonging to different chain identifiers, we can pinpoint the specific regions where subunits pack together. This matrix serves as the mathematical foundation for the binary contact maps, as it allows us to apply specific distance thresholds to filter out significant biological interactions.
+
+```{python printing distance matrix}
+
+dist_matrix = distance_matrix(df_struct_info)
+print("DISTANCE MATRIX")
+print(dist_matrix)
+
+```
+
+To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained.
+
+Through the plot_contact_matrix function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein's tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.
+
+This dual-matrix approach allows for a clear visual and numerical distinction between the folding of individual subunits and the stabilization of the overall protein complex.
+
+```{python print intra and inter contact matrixces}
+intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+print("INTRA-CHAIN CONTACT MATRIX")
+print(intra_contact_matrix)
+print("INTER-CHAIN CONTACT MATRIX")
+print(inter_contact_matrix)
+```
 
 ## Contact Map Analysis
 
@@ -40,5 +75,5 @@ for id, element in df_conjunto.items():
     num_chains = element["chain"].nunique()
     print(f"Number of chains: {num_chains}")
     m_dist = distance_matrix(element) 
-    plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
+    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)#### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
