@@ -8,6 +8,7 @@ execute:
   echo: true        # Muestra el código
   warning: false    # Oculta avisos innecesarios en el informe
 ---
+
 # Results
 
 ## Structural Metadata and Parsing
@@ -18,9 +19,9 @@ The developed pipeline successfully retrieved and integrated metadata for the se
 
 The generated contact maps provide a spatial representation of the protein's fold and quaternary structure using a distance threshold of 6–12 Å. The visualization distinguishes between two fundamental types of interactions:
 
--   Intra-chain Contacts: These represent the internal folding of individual polypeptide chains in green. The clusters observed along the diagonal correspond to secondary structure elements (such as $\alpha$-helices) and tertiary packing within the subunit.
+-   Intra-chain contacts: These represent the internal folding of individual polypeptide chains in green. The clusters observed along the diagonal correspond to secondary structure elements (such as $\alpha$-helices) and tertiary packing within the subunit.
 
--   Inter-chain Contacts: These highlight the interfaces between different subunits. The presence of red clusters indicates the quaternary organization of the protein, marking specific interaction surfaces that stabilize the complex.
+-   Inter-chain contacts: These highlight the interfaces between different subunits. The presence of red clusters indicates the quaternary organization of the protein, marking specific interaction surfaces that stabilize the complex.
 
 ### Quaternary Structure Interpretation
 
