@@ -44,17 +44,24 @@ The structures analyzed in this project correspond to the following proteins:
 
 ## Parsing PDB Files
 
-The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @parse_pdb_function.
+::: {.callout-note}
+ Before introducing the main functions of the project, it is important to highlight the implmentation of the @setup-libraries function, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
+:::
+
+
+The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @get_metadata_function.
 
 The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
 
-The function defined as @parse_pdb_function performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
+The function defined as @get_metadata_function performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
 
-In first place, the function implements a basic system of error handling to ensure that the queries are successful. It handles errors due to timeouts and inexistent entries (HTTP status code 404).
+In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function @handle_API_error_function, which checks the status code of the response and returns an appropriate message in case of an error. 
 
 Once the queries are successful, the function extracts the relevant information from the JSON responses:
 
 ```{python}
+#| echo: false
+
 import pandas as pd
 
 table_info = pd.DataFrame({
@@ -63,17 +70,300 @@ table_info = pd.DataFrame({
     "Source (API JSON field)": ["rcsb_id", "rcsb_polymer_entity.pdbx_description", "rcsb_entity_source_organism", "exptl.method", "rcsb_authors", "rcsb_accession_info.initial_release_date", "rcsb_entry_info.resolution_combined", "rcsb_entry_info.polymer_entity_count_protein", "rcsb_entry_info.nonpolymer_entity_count"]
 })
 
+table_info
+
 ```
 
 There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function @extract_metadata_function is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
 
-All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. 
+All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. This is done through the @metadata_to_csv_function, which takes the metadata dictionary and the desired file name as input and saves the DataFrame as a CSV file. 
 
-In case of any error during the queries, None is returned. 
+### Code Implementation
 
+```{python}
+#| label: setup-libraries
+#| message: false
+#| warning: false
 
+import requests
+import pandas as pd
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches 
 
-## Metadata Extraction
+```
+
+```{python}
+#| label: handle_API_error_function
+
+def handle_API_error(id, status_code = None, flag_timeout = False):
+    """
+    Handles HTTP request errors or timeouts and prints informative messages in
+    order to centralize the management of API request errors.
+
+    Parameters
+    ----------
+    id : str
+        PDB ID queried in the request.
+    status_code : int
+        HTTP status code returned by the request. 
+        None by default (in case of timeout error).
+    flag_timeout : bool
+        Indicates whether the request failed due to a timeout.
+        If True, the status_code is ignored.
+        alse by default.
+
+    Returns
+    -------
+        bool (True)
+            True if the request was successful (status code 200).
+            None returned for any error or timeout condition.
+    """
+    if flag_timeout: # If a timeout occurred, skip all other checks
+        print(f"[408] Timeout error for ID: {id}.")
+        
+    else:
+        if status_code == 200: # If the request was successful, returns True
+            return True
+        
+        elif status_code == 301 or status_code == 302:
+            # Resource has been permanently or temporarily moved
+            print(f"[301] or [302] The object was moved to other route")
+
+        elif status_code == 400:
+            # Request processed but considered unsuccessful
+            print(f"[400] Not valid ID: {id}")
+
+        elif status_code == 404:
+            # Request processed but no result was obtained
+            print(f"[404] Result not found for ID: {id}")
+
+        elif status_code == 429:
+            # Request rejected due to request rate limits
+            print(f"[429] Error: Too many requests.")
+
+        elif status_code == 500 or status_code == 503:
+            # Request failed due to internal server issues
+            print("[500] or [503] Internal Server Error")
+
+        else: # For any other error status code
+            print(f"Error: {status_code}")
+        
+        return # For all cases except status_code == 200, function returns None
+```
+
+```{python}
+#| label: extract_metadata_function
+def extract_join_metadata(data_dict, metadata_key, subkey=None):
+    """
+    Extract values from a metadata dictionary and join them into a string.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Dictionary containing the metadata entries.
+    metadata_key : str
+        Key in `data_dict` whose value should be a list.
+    subkey : str, optional
+        Key to use within each list element.  
+        If `None` the list elements are used directly.
+
+    Returns
+    -------
+    str
+        Comma-separated string of extracted values.
+        "N/A"` if the list is empty or no values were found.
+    """
+    # Retrieve the list of items associated with metadata_key
+    items = data_dict.get(metadata_key, []) # default to an empty list if not found
+
+    extracted_items = [] # empty list
+
+    if subkey: # In case there is a subkey
+        for item in items: # Iterate through items
+            # Get the value for the specific subkey
+            value = item.get(subkey) # NO second arg to avoid list of "N/A"
+            if value: 
+                # If there is a value, it is added to the list
+                extracted_items.append(value)
+   
+    # Return a string (comma-separated) if data was found 
+    if extracted_items:
+        return ", ".join(extracted_items) 
+    else: # Otherwise, return "N/A"
+        return "N/A" 
+```
+
+```{python}
+#| label: get_metadata_function
+
+def get_metadata_info(pdb_id):
+    """
+    Parse a PDB (Protein Data Bank) file and extract metadata information.
+    Extracts and formats some metadata via extract_join_metadata function.
+    Handles API errors via handle_API_error function.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    
+    Returns
+    -------
+    metadata : dict
+        Dictionary containing PDB metadata.
+        Or None if an error occurs.
+    """
+    # Define endpoints for RCSB PDB Data API 
+    # Entry API: Global metadata -> PDB ID; Determination Method; Authors; 
+    #                               Release Date; Resolution; Number of peptide chains; 
+    #                               Number of Other molecules
+    url_entry = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
+
+    # Entity API: Specific data for cheminal entities
+    entity_id = 1 # Using 1 for the primary polymer (protein)
+    url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/{entity_id}" 
+
+    # Handling with Timeout and Errors (only two possibilities: 200 / 404)
+    try:
+        response_entry = requests.get(url_entry,
+                                     timeout = 100) 
+        response_entity = requests.get(url_entity,
+                                      timeout = 100) 
+
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        handle_API_error(pdb_id, flag_timeout = True)
+        return
+    
+    # Validate that PDB ID exists in both endopoints
+    flag_entry = handle_API_error(pdb_id, status_code = response_entry.status_code)
+    flag_entity = handle_API_error(pdb_id, status_code = response_entity.status_code)
+
+    if not flag_entry or not flag_entity:
+        return
+    
+    # Execution continues only if a 200 OK status is received
+    
+    # Parse JSON responses
+    data_entry = response_entry.json()
+    data_entity = response_entity.json()
+
+    ############ Metadata extraction ############
+
+    # ---- PDB ID
+    id = data_entry.get("rcsb_id", "N/A") # Default to "N/A" if rcsb_id is not found
+
+    # ---- Protein name
+    # Default to empty dict to safely chain subsequent .get() calls
+    polymer_entity = data_entity.get("rcsb_polymer_entity", {}) 
+    prot_name = polymer_entity.get("pdbx_description", "N/A") 
+    
+    # ---- Source Organism
+    # Extract and format via extract_join_metadata
+    source_organisms = extract_join_metadata(data_entity,
+                                            "rcsb_entity_source_organism", 
+                                            subkey="ncbi_scientific_name") 
+
+    # ---- Determination Method
+    det_method = extract_join_metadata(data_entry, 
+                                      "exptl", 
+                                      subkey="method")
+
+    # ---- Authors
+    primary_cit = data_entry.get("rcsb_primary_citation", {}) 
+    authors = extract_join_metadata(data_entry, 
+                                   "rcsb_authors") 
+
+    # ---- Release date
+    acc_info = data_entry.get("rcsb_accession_info", {}) 
+    date = acc_info.get("initial_release_date", "N/A")
+
+    # ---- Resolution
+    entry_info = data_entry.get("rcsb_entry_info", {}) 
+    resolution = entry_info.get("resolution_combined", []) 
+    if resolution: # If resolution is not an empty list
+        resolution = resolution[0] # To remove "[]" 
+    else:
+        resolution = "N/A"
+
+    # ---- Number of peptide chains
+    num_chains = entry_info.get("polymer_entity_count_protein", "N/A")
+
+    # ---- Other molecules
+    molecules = entry_info.get("nonpolymer_entity_count", "N/A")
+
+    ############ Metadata dictionary ############
+
+    # Assemble the metadata dictionary
+    metadata = {
+        "PDB ID": id,
+        "Protein Name": prot_name,
+        "Source Organims": source_organisms,
+        "Determination Method": det_method,
+        "Authors": authors,
+        "Release Date": date,
+        "Resolution": resolution,
+        "Number of Peptide Chains": num_chains,
+        "Number of Other Molecules": molecules
+    }
+    return metadata
+```
+
+```{python}
+#| label: metadata_to_csv_function
+
+def save_metadata_csv(pdb_id, filename):
+    """
+    Extracts metadata from PDB ID via get_metadata_info function
+    Stores the results in a pandas DataFrame and writes it to a CSV file.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        PDB ID to be parsed.
+    filename : str
+        The output CSV file path where metadata will be saved.
+    
+    Returns
+    -------
+    df : pd.DataFrame
+        A pandas DataFrame containing the metadata.
+    """
+    # Fetch metadata dictionary for the single PDB ID
+    metadata_info = get_metadata_info(pdb_id) 
+
+    # Pass as a list to avoid "Scalar values" index error in Pandas
+    df = pd.DataFrame([metadata_info])
+
+    
+    # Export the DataFrame to a CSV file
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
+    
+    print(f"Metadata for {pdb_id} successfully saved to {filename}")
+
+    return df
+```
+
+## Structural Infrormation Extraction and Distance Matrix Calculation
+
+To understand how a protein folds and how its redidues interact with each other, it is needed to extract the spatial coordinates of the aminoacids. Then it is possible to calculate the pairwise distances between them.
+
+PDB stablished a text standard  and human readable format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of information, they are fixed register lines with specific fields. The file start with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. Then, there is a section with the atomic coordinates, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a section with the connectivity information, which describes how the atoms are connected to form residues and chains.
+
+To extract the mentioned data, we have implemented the function @get_structural_info_function, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+
+The function also, traduce the aminoacid three-letter code to one-letter code, through a mapping dictionary. 
+
+Finally, the function extract the chain, number of residue and the cartesian coordinates (x, y, z), and return a dataframe that will be used for the subsequent distance and contact map calculations.
+
+- FALTA AÑADIR FUNCIONES AUXILIARES QUE USE
+- FALTA AÑADIR EL CÁLCULO DE LAS DISTANCAS 
+- FALTA AÑADIR EL CÓDIGO
+
 
 ## Distance and Contact Map Calculations
 
@@ -82,6 +372,63 @@ In case of any error during the queries, None is returned.
 \[
 d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
 \]
+
+To generate the contact matrix for each protein, we have create a python function which plot the contact between residues based on distance threshold (6-12 A) and differences between intra or interchain contacts. 
+
+It is 
+
+```{python}
+#| label: contact_matrix_function
+
+def contact_matrix(structural_info, distance_matrix):
+    """
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
+    """
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
+
+    # Define significant folding distances:
+    # Threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= 6) & (distance_matrix <= 12)
+
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
+
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
+
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
+
+    return matrix_intra, matrix_inter
+```
 
 ---
 
@@ -105,3 +452,30 @@ TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 
 [Aquí básicamente pondría el paso a paso que hemos seguido en github, con los commits, etc. para que se vea el proceso de trabajo]
 
+The development of this project has followed a workflow managed via GitHub, in order it can be reproduced.
+
+The following table sumarizes the main stages of the project.
+
+```{python}
+#| echo: false
+table_github = pd.DataFrame({
+    "Phase": [
+        "Setup", 
+        "Metadata", 
+        "Protein structural information", 
+        "Distance matrix", 
+        "Contact maps", 
+        "Report writing"], 
+    "Description":[
+        "Repository initialization and project structuring", 
+        "Access to each protein key information via APIs and store it in a dataframe", 
+        "Get access to PDB files and parse them to gen atomic coordinates",
+        "Compute the distances matrix between $C_{\\alpha}$ atoms",
+        "Plot intra/interchain contacts giving a threshold",
+        "Create the final file and include all the previous analysis"]})
+table_github
+```
+
+Every modification is documented through a descriptive commit message.
+
+**Repository Access**: https://github.com/MCML-Projects/STRBIO.git 
