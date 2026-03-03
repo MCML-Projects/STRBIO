@@ -64,120 +64,108 @@ def extract_join_metadata(data_dict, metadata_key, subkey=None):
     else: # Otherwise, return "N/A"
         return "N/A" 
 ```
-```{python parse_pdb}
-#| label: parse_pdb_function
-import pandas as pd
+
+
+```{python get_metadata_function}
+#| label: get_metadata_function
+
 import requests
 
-def parse_pdb(pdb_id):
+def get_metadata_info(pdb_id):
     """
-    falta docstring
+    Parse a PDB (Protein Data Bank) file and extract metadata information.
+    Handles timeout exception adn 404 error during HTTP requests.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    
+    Returns
+    -------
+    metadata : dict
+        Dictionary containing PDB metadata.
+        Or None if an error occurs.
     """
-    # url entry for general info -> PDB ID; Determination Method; Authors; Release Date; Resolution; Num of peptide chains; Numb of other molecules
+    # Define endpoints for RCSB PDB Data API 
+    # Entry API: Global metadata -> PDB ID; Determination Method; Authors; 
+    #                               Release Date; Resolution; Number of peptide chains; 
+    #                               Number of Other molecules
     url_entry = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
-    # url entity for more info -> protein name, source organism
-    url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/1"
 
-    #Handling errors for APIs:
+    # Entity API: Specific data for cheminal entities
+    entity_id = 1 # Using 1 for the primary polymer (protein)
+    url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/{entity_id}" 
+
+    # Handling with Timeout and Errors (only two possibilities: 200 / 404)
     try:
-        
         response_entry = requests.get(url_entry,
-                                    timeout = 100) #more than 100 secs --> timeout error
+                                     timeout = 100) 
         response_entity = requests.get(url_entity,
-                                    timeout = 100) #idem as entry
-    #to check timeout error
-    except requests.exceptions.Timeout:
-        print(f"[408] Timeout error for ID: {pdb_id}.")
+                                      timeout = 100) 
+
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        print(f"Timeout error for ID: {pdb_id}.")
         return
-    ### only status_code 404 for handling error because in the link only appears two options of response: 200 / 404 
+    
+    # Validate that PDB ID exists in both endopoints
     if response_entry.status_code == 404 or response_entity.status_code == 404:
         print(f"[404] Result not found for ID: {pdb_id}")
         return
     
-    ###no haría falta poner else == 200 el status code porque ya hay returns arriba
+    # Execution continues only if a 200 OK status is received
     
-    #convert to json if everything is OK:
+    # Parse JSON responses
     data_entry = response_entry.json()
     data_entity = response_entity.json()
 
-    # PDB ID
-    id = data_entry.get("rcsb_id", "N/A") #In case rcsb_id does not exist, N/A
+    ############ Metadata extraction ############
 
-    # Protein name
-    polymer_entity = data_entity.get("rcsb_polymer_entity", {}) #In case rcsb_polumer_entity does not exist, empty dict to avoid errors
+    # ---- PDB ID
+    id = data_entry.get("rcsb_id", "N/A") # Default to "N/A" if rcsb_id is not found
+
+    # ---- Protein name
+    # Default to empty dict to safely chain subsequent .get() calls
+    polymer_entity = data_entity.get("rcsb_polymer_entity", {}) 
     prot_name = polymer_entity.get("pdbx_description", "N/A") 
     
-    # Source Organism
-    source_organisms = extract_join_metadata(data_entity, "rcsb_entity_source_organism", subkey="ncbi_scientific_name") 
+    # ---- Source Organism
+    # Extract and format via extract_join_metadata
+    source_organisms = extract_join_metadata(data_entity,
+                                            "rcsb_entity_source_organism", 
+                                            subkey="ncbi_scientific_name") 
 
-    # Determination Method
-    det_method = extract_join_metadata(data_entry, "exptl", subkey="method")
+    # ---- Determination Method
+    det_method = extract_join_metadata(data_entry, 
+                                      "exptl", 
+                                      subkey="method")
 
-    #Todo lo de abajo lo sustituyo por la función que he hecho de extract_join_metadata, para que quede más limpio el código.
-    
-    ### Si os gusta lo de la función de extract_join_metadata, simplemente es borrar lo que está entre """. 
+    # ---- Authors
+    primary_cit = data_entry.get("rcsb_primary_citation", {}) 
+    authors = extract_join_metadata(data_entry, 
+                                   "rcsb_authors") 
 
-    """
-    # Source Organism
-    organisms = data_entity.get("rcsb_entity_source_organism", []) #rcsb_entity_source_organism is a list
-    source_organisms = []
-    for organism in organisms: # In case there is more than one organism (if there is no one, no error)
-        name = organism.get("ncbi_scientific_name") # NO second option to avoid list of N/A
-        if name:
-            source_organisms.append(name) 
-    
-    if source_organisms:
-        source_organisms = ", ".join(source_organisms) # Convert into str
-    else:
-        source_organisms = "N/A" #N/A in case there is no organism
-
-    # Determination Method
-    exptl = data_entry.get("exptl", []) # exptl is a list
-    det_method = []
-    for indiv_exp in exptl: # In case there is more than one exp
-        method = indiv_exp.get("method")
-        if method:
-            det_method.append(method)
-    
-    if det_method:
-        det_method = ", ".join(det_method) # Convert into str
-    else:
-        det_method = "N/A"
-    """
-
-    # Authors
-    primary_cit = data_entry.get("rcsb_primary_citation", {}) # rcsb_primary_citation is a dict
-
-    authors = extract_join_metadata(data_entry, "rcsb_authors") 
-    #Lo mismo que os decía antes respecto a la nueva función. 
-    """
-    authors = primary_cit.get("rcsb_authors", []) # rcsb_authors is a list
-    if authors:
-        authors = ", ".join(authors) # Convert into str
-    else:
-        authors = "N/A"
-    """
-
-    # Release date
-    acc_info = data_entry.get("rcsb_accession_info", {}) # rcsb_accession_info is a dict
+    # ---- Release date
+    acc_info = data_entry.get("rcsb_accession_info", {}) 
     date = acc_info.get("initial_release_date", "N/A")
 
-    # Resolution
-    entry_info = data_entry.get("rcsb_entry_info", {}) # rcsb_entry_info is a dict
-    resolution = entry_info.get("resolution_combined", []) # resolution_combined is a list
+    # ---- Resolution
+    entry_info = data_entry.get("rcsb_entry_info", {}) 
+    resolution = entry_info.get("resolution_combined", []) 
     if resolution: # If resolution is not an empty list
-        resolution = resolution[0] # To delete the '[]' in the final table
+        resolution = resolution[0] # To remove "[]" 
     else:
         resolution = "N/A"
 
-    # Number of peptide chains
+    # ---- Number of peptide chains
     num_chains = entry_info.get("polymer_entity_count_protein", "N/A")
 
-    # Other molecules
+    # ---- Other molecules
     molecules = entry_info.get("nonpolymer_entity_count", "N/A")
 
-    # Dictionaty metadata
-
+    ############ Metadata dictionary ############
+    
+    # Assemble the metadata dictionary
     metadata = {
         "PDB ID": id,
         "Protein Name": prot_name,
@@ -190,28 +178,13 @@ def parse_pdb(pdb_id):
         "Number of Other Molecules": molecules
     }
     return metadata
-
-# Prueba
-pdb_list = ["1RBP", "1QRE", "1DGF"]
-metadata = []
-
-#Alomejor se puede hacer una función por separado que tenga como argumentos la lista de pdbs. Y desde esta función que se llame a la función del API para cada pdb y se guarde la inf. en un csv (tal cual está abajo). 
-for pdb in pdb_list:
-    pdb_dict = parse_pdb(pdb)
-    metadata.append(pdb_dict)
-
-# Save in .csv
-df = pd.DataFrame(metadata)
-df.to_csv("metadata.csv", index=False)
-
-df_loaded = pd.read_csv("metadata.csv")
-
 ```
 
-[parte 1 ->]{style="font-weight: bold; font-size: 2em;"} Esto te genera un dict de python, y pone que hagamos table or report.
-Igual podríamos generar un csv que queda más limpio con los metadatos
 
-```{python}
+
+```{python save_metadata_csv}
+#| label: metadata_to_csv_function
+#| 
 #Comprobar que funciona
 """
 def save_metadata_csv(pd_list, filename):
@@ -472,3 +445,9 @@ for id, element in df_conjunto.items():
 ```
 
 4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
+
+
+
+
+# Prueba
+pdb_list = ["1RBP", "1QRE", "1DGF"]
