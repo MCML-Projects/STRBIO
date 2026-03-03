@@ -404,29 +404,47 @@ Generamos la matriz de distancias
 ```{python}
 #| label: distance_matrix_function
 
-def distance_matrix(df):
+
+def distance_matrix(df_structural_info):
     """
-    docstring
+    Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.
+
+    Parameters
+    ----------
+    df_structural_info : pandas.DataFrame
+        A dataframe containing structural information with columns:
+                chain / residue_number / amino_acid / x / y / z
+    Returns
+    -------
+    distance_matrix : numpy.ndarray
+        A square symmetric matrix of shape (n, n) where n is the number of CA atoms.
+        Each element [i, j] contains the Euclidean distance between CA atoms i and j in angstroms.
+        Diagonal elements are zero.
     """
-    size = N = len(df) # Matriz size = protein's length
-    M = np.zeros((N,N)) # Create an empty matrix
+    # Matrix size corresponds to the number of residues/atoms
+    size = len(df_structural_info) 
+    # Initialize a square matrix of zeros
+    distance_matrix = np.zeros((size, size)) 
 
-    # Extract the xyz coordinates from the dataframe, they are a list of the xyz coordinates as a list for each CA [[x,y,z]]
-    coordinates = df[["x","y","z"]].values 
+    # Extract xyz coordinates as a NumPy array (each row is [x, y, z])
+    coordinates = df_structural_info[["x","y","z"]].values 
 
-    for row, coord1 in enumerate(coordinates): # xyz from reference CA (row)
-        for column, coord2 in enumerate(coordinates): # xyz from the other CA (column)
+    # Iterate through each pair of coordinates to calculate distances
+    for row, coord1 in enumerate(coordinates): # Reference coordinate
+        for column, coord2 in enumerate(coordinates): # Comparison coordinate
 
+            # Calculate the difference in each dimension
             dx = coord2[0] - coord1[0]
             dy = coord2[1] - coord1[1]
             dz = coord2[2] - coord1[2]
 
-            distance = math.sqrt(math.pow(dx,2) + math.pow(dy,2) + math.pow(dz,2))
+            # Apply the 3D distance formula: sqrt(dx^2 + dy^2 + dz^2)
+            distance = math.sqrt(math.pow(dx, 2) + math.pow(dy, 2) + math.pow(dz, 2))
 
-            M[row,column] = distance # Fill the cell in matrix
+            # Store the result in the corresponding matrix cell
+            distance_matrix[row,column] = distance 
 
-    return M
-
+    return distance_matrix
 ```
 
 3. Write a function for plotting the corresponding contact map for each structure, using a standard contact threshold (between 6-12 Å) and different colors for different contacts (intra- and interchain).
