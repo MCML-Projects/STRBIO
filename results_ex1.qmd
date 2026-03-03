@@ -36,7 +36,7 @@ print(dist_matrix)
 
 ```
 
-To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained.
+To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained. The values out of range are represented as $NaN$.
 
 Through the plot_contact_matrix function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein's tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.
 
@@ -64,8 +64,6 @@ Based on the distribution of contacts and the chain boundary indicators (dashed 
 
 The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allowed for the clear overlay of these two interaction types, facilitating the identification of protein interfaces and overall topology.
 
-TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
-
 ```{python plot_contact_matrix function}
 #| label: fig-contact-maps
 #| echo: true
@@ -77,3 +75,14 @@ for id, element in df_conjunto.items():
     m_dist = distance_matrix(element) 
     plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)#### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
+
+The 1RBP protein shows 
+
+
+The 1QRE protein, due to the composition, just green lines appear. This chain has parallel $beta$-sheets and $alpha$-helix. Also there are contacts between $alpha$-helix and $beta$-strands. 
+The parallel $beta$-sheets are represented as parallel lines to the diagonal and far from it. 
+The $alpha$-helix como lineas paralelas cercanas a la diagonal
+ 
+La $alpha$-helix and $beta$-strands como perpendicular a la diagonal
+
+, 1QRE, and 1DGF, effectively mapping their tertiary and quaternary organizations
