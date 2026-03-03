@@ -18,13 +18,25 @@ He hecho este códgio de abajo basado en lo de Lucía de arriba:
 
 aun así, para la entrega yo no pondría los códigos de dentro del diccionario de metadata así, sino que lo expandiría un poco más (igual extraer todo por separado con más pasos y luego meterlo en metadata?) para que quede algo más claro
 
+```{python}
+#| label: setup-libraries
+#| message: false
+#| warning: false
 
+import requests
+import pandas as pd
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches 
+
+```
 
 DUDA: me pone en la web que puso lucía que las posibles salidas son directamente:
 200 o 404, eso es que no puede haber más?
 
-```{python extract_join_metadata}
-#| label: extract_metadata_function
+```{python}
+#| label: extract_join_metadata_function
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
     """
     Extract values from a metadata dictionary and join them into a string.
@@ -66,16 +78,73 @@ def extract_join_metadata(data_dict, metadata_key, subkey=None):
 ```
 
 
-```{python get_metadata_function}
-#| label: get_metadata_function
+```{python}
+#| label: handle_API_error_function
 
-import requests
+def handle_API_error(id, status_code = None, flag_timeout = False):
+    """
+    Handles HTTP request errors or timeouts and prints informative messages in
+    order to centralize the management of API request errors.
+
+    Parameters
+    ----------
+    id : str
+        PDB ID queried in the request.
+    status_code : int
+        HTTP status code returned by the request. 
+        None by default (in case of timeout error).
+    flag_timeout : bool
+        Indicates whether the request failed due to a timeout.
+        If True, the status_code is ignored.
+        alse by default.
+
+    Returns
+    -------
+        bool (True)
+            True if the request was successful (status code 200).
+            None returned for any error or timeout condition.
+    """
+    if flag_timeout: # If a timeout occurred, skip all other checks
+        print(f"[408] Timeout error for ID: {id}.")
+        
+    else:
+        if status_code == 200: # If the request was successful, returns True
+            return True
+        
+        elif status_code == 301 or status_code == 302:
+            # Resource has been permanently or temporarily moved
+            print(f"[301] or [302] The object was moved to other route")
+
+        elif status_code == 400:
+            # Request processed but considered unsuccessful
+            print(f"[400] Not valid ID: {id}")
+
+        elif status_code == 404:
+            # Request processed but no result was obtained
+            print(f"[404] Result not found for ID: {id}")
+
+        elif status_code == 429:
+            # Request rejected due to request rate limits
+            print(f"[429] Error: Too many requests.")
+
+        elif status_code == 500 or status_code == 503:
+            # Request failed due to internal server issues
+            print("[500] or [503] Internal Server Error")
+
+        else: # For any other error status code
+            print(f"Error: {status_code}")
+        
+        return # For all cases except status_code == 200, function returns None
+```
+
+```{python}
+#| label: get_metadata_info_function
 
 def get_metadata_info(pdb_id):
     """
     Parse a PDB (Protein Data Bank) file and extract metadata information.
     Extracts and formats some metadata via extract_join_metadata function.
-    Handles timeout exception adn 404 error during HTTP requests.
+    Handles API errors via handle_API_error function.
     
     Parameters
     ----------
@@ -106,12 +175,14 @@ def get_metadata_info(pdb_id):
                                       timeout = 100) 
 
     except requests.exceptions.Timeout: # Handling Timeout Error
-        print(f"Timeout error for ID: {pdb_id}.")
+        handle_API_error(pdb_id, flag_timeout = True)
         return
     
     # Validate that PDB ID exists in both endopoints
-    if response_entry.status_code == 404 or response_entity.status_code == 404:
-        print(f"[404] Result not found for ID: {pdb_id}")
+    flag_entry = handle_API_error(pdb_id, status_code = response_entry.status_code)
+    flag_entity = handle_API_error(pdb_id, status_code = response_entity.status_code)
+
+    if not flag_entry or not flag_entity:
         return
     
     # Execution continues only if a 200 OK status is received
@@ -183,19 +254,20 @@ def get_metadata_info(pdb_id):
 
 
 
-```{python save_metadata_csv}
-#| label: metadata_to_csv_function
+```{python}
+#| label: save_metadata_function
 
-def save_metadata_csv(pdb_id, filename):
+def save_metadata(pdb_id, filename=None):
     """
-    Extracts metadata from PDB ID via get_metadata_info function
-    Stores the results in a pandas DataFrame and writes it to a CSV file.
+    Extracts metadata from PDB ID via get_metadata_info function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
     
     Parameters
     ----------
     pdb_id : str
         PDB ID to be parsed.
-    filename : str
+    filename : str, optional
         The output CSV file path where metadata will be saved.
     
     Returns
@@ -208,11 +280,11 @@ def save_metadata_csv(pdb_id, filename):
 
     # Pass as a list to avoid "Scalar values" index error in Pandas
     df = pd.DataFrame([metadata_info])
-
-    # Export the DataFrame to a CSV file
-    df.to_csv(filename, index=False) # index=False to prevent writing row numbers
     
-    print(f"Metadata for {pdb_id} successfully saved to {filename}")
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(filename, index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
     return df
 ```
@@ -220,100 +292,106 @@ def save_metadata_csv(pdb_id, filename):
 2. Parse the data to extract the protein structural information from the PDB file in tabular format, then compute the pairwise distance matrix for each PDB structure. The distance between two amino acids is usually calculated as the 3D Euclidean distance between their C-alpha (CA) atoms.
 
 
-(Lo he intentado hacer sin API porque gema me ha rallado con el enunciado y creo que modesto se refiere a que lo hagamos así ⬇⬇⬇⬇⬇)
+```{python}
+#| label: get_structural_info_function
 
-Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
-```{python CheckPROTEIN}
-def CheckPROTEIN(Protein_sequence):
-    '''
-    This function checks if the sequence is compose by aminoacids
-    Input: Sequence
-    Output: Ambiguous nucleotides
-    '''
-    IsPROTEIN=False
-    length=0
-    NonCanonicalAA=[]
-    while IsPROTEIN==False:
-        for aminoacid in Protein_sequence:
-            length+=1
-            if aminoacid not in ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']:
-
-                NonCanonicalAA.append('X')
-            else: 
-                NonCanonicalAA.append(aminoacid)
-
-            if length==len(Protein_sequence):
-                IsPROTEIN=True
-    CheckedProteinSequence=''.join(NonCanonicalAA)
-
-    return CheckedProteinSequence
-```
-
-
-```{python download_pdb_files}
-import requests
-import pandas as pd
 def get_structural_info(pdb_id):
     """
-    docstring
-    """
-
-    try:
-        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
-        response = requests.get(url, timeout = 100)
+    Retrieve and parse structural information from a PDB (Protein Data Bank) file.
+    Extracts backbone data by filtering for Alpha Carbon atoms, as a simplified representation of the protein structure.
+    Structural information extracted: chain, residue number, amino acid, 
+    and cartesian coordinates (x, y, z).
+    Handles API errors via handle_API_error function.
     
-    except requests.exceptions.Timeout:
-        print(f"[408] Timeout error for ID: {pdb_id}.")
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    
+    Returns
+    -------
+    results_df : pd.DataFrame
+        A DataFrame containing structural information with columns:
+        - chain: Protein chain identifier
+        - residue_number: Sequence number of the residue
+        - amino_acid: Single-letter amino acid code
+        - x, y, z: Cartesian coordinates of the alpha carbon atom
+    
+        Returns None if the request fails due to timeout or HTTP error.
+    """
+    # Define the download endpoint for the raw PDB file
+    url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    
+    # Handling with Timeout and Errors 
+    try:
+        response = requests.get(url, 
+                               timeout = 100)
+    
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        handle_API_error(pdb_id, flag_timeout = True)
         return
 
-    if response.status_code == 404:
-        print(f"[404] Result not found for ID: {pdb_id}")
+    # Handle HTTP status code with handle_API_error and check if the request was successful
+    flag = handle_API_error(pdb_id, status_code = response.status_code)
+    
+    if not flag:  # Proceed only if the request was successful (flag: True)
         return
-    ### creo que hay q añadir más handling errors en este caso
-    # creo que sí puede haber más respuestas que 200 / 404 
-    # (tenemos una función ya hecha para handling errors de apis de bases de datos biomed si eso la pego))
 
-    #L: Me gusta mucho como está hecha la función, lo dejaría tal cual. Pero si es verdad que habría que comprobar lo de los errores para todas las llamadas a la API. 
-    if response.status_code == 200:
-        pdb_data = response.text #.text because is a .pdb file
+    # Execution continues only if a 200 OK status is received
 
-        coords = [] # List to store coordinates
-        for line in pdb_data.split("\n"): # Each line
-            if line.startswith("ATOM"): # Processing only atom lines
-                ##### WARNING -> Fixed-column parsing (not split/tab) is required by the PDB standard 
-                ###(EN PDB NO SE SEPARA POR TABULADORES VAYA, son columnas fijas)
-                atom_name = line[12:16].strip() #strip to delete blank spaces
-                if atom_name == "CA": # If it is CA
-                    coord_x = line[30:38].strip()
-                    coord_y = line[38:46].strip()
-                    coord_z = line[46:54].strip()
+    # Mapping for 3-letter to 1-letter amino acid codes
+    aa_map = {
+        "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C", "GLN": "Q", "GLU": "E", 
+        "GLY": "G", "HIS": "H", "ILE": "I", "LEU": "L", "LYS": "K", "MET": "M", "PHE": "F", 
+        "PRO": "P", "SER": "S", "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V"
+    }
 
-                    indiv_coords = {"x": float(coord_x),
-                              "y": float(coord_y),
-                              "z": float(coord_z)
-                            }
-                    chain = line[21:22].strip()
-                    residue_number = line[22:26].strip()
-                    
-                    canonical_chain=CheckPROTEIN(chain)
+    # Access the raw text content of the PDB file
+    pdb_data = response.text # .text because is a .pdb file
 
-                    coords.append({
-                        "chain": canonical_chain,
-                        "residue_number": residue_number,
-                        "x": float(coord_x),
-                        "y": float(coord_y),
-                        "z": float(coord_z)
-                        })
-        # Transform the data into a df
-        df_coords = pd.DataFrame(coords)
-    return df_coords
+    ############ Structural data extraction ############
 
-# Try for every protein
-pdb_list = ["1RBP", "1QRE", "1DGF"]
-df_conjunto = {}
-for protein in pdb_list:
-    df_conjunto[protein] = get_structural_info(protein)
+    results = [] # List to store extracted structural data
 
+    for line in pdb_data.split("\n"): # Parse .pdb file line by line
+       
+        if line.startswith("ATOM"): # Processing only atom lines
+            # The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)
+            # Extract atom name (columns 13-16)
+            atom_name = line[12:16].strip() # .strip() to remove blank spaces
+
+            # Filter for Alpha Carbons (CA) to represent the protein backbone
+            if atom_name == "CA": 
+                # Extract 3-letter amino acid name (columns 18-20)
+                aa_name = line[17:20].strip() 
+                # Convert 3-letter to 1-letter using aa_map dictionary
+                aa_name_1 = aa_map.get(aa_name, "X") # "X" for non-canonical residues
+
+                # Extract XYZ coordinates from their fixed positions
+                coord_x = line[30:38].strip() # X (columns 31-38)
+                coord_y = line[38:46].strip() # Y (columns 39-46)
+                coord_z = line[46:54].strip() # Z (columns 47-54)
+                
+                # Extract chain identifier (column 22)
+                chain = line[21:22].strip()
+
+                # Extract residue sequence number (columns 23-26)
+                residue_number = line[22:26].strip() 
+                
+                # Append record to the results list
+                results.append({
+                               "chain": chain,
+                               "residue_number": residue_number,
+                               "amino_acid": aa_name_1,
+                               "x": float(coord_x),
+                               "y": float(coord_y),
+                               "z": float(coord_z)
+                            })
+    
+    # Transform data into a df
+    results_df = pd.DataFrame(results)
+
+    return results_df
 ```
 
 justificacion de porqué hay que acceder así:
@@ -323,9 +401,8 @@ El formato PDB es un estándar de columnas fijas (basado en las antiguas tarjeta
 
 Generamos la matriz de distancias
 
-```{python distance_matrix}
-import numpy as np
-import math
+```{python}
+#| label: distance_matrix_function
 
 def distance_matrix(df):
     """
@@ -350,19 +427,16 @@ def distance_matrix(df):
 
     return M
 
-for id,element in df_conjunto.items():
-    print(id)
-    print(distance_matrix(element))
 ```
 
 3. Write a function for plotting the corresponding contact map for each structure, using a standard contact threshold (between 6-12 Å) and different colors for different contacts (intra- and interchain).
 
-función que plotea
-```{python plot_contact_matrix function}
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches #to insert legend!
-import numpy as np
-def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
+función para generar las matrices de contacto:
+-intra e inter chain
+```{python}
+#| label: contact_matrix_function
+
+def contact_matrix(structural_info, distance_matrix):
     """
     docstring
     """
@@ -399,17 +473,26 @@ def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
     #interchain contacts:
     matrix_inter[bool_matrix & ~same_chain_bool_matrix] = distance_matrix[bool_matrix & ~same_chain_bool_matrix] # has to check two conditions: signficative distances (bool_matrix) and NOT same chain (~same_chain_bool_matrix)
 
+    return matrix_intra, matrix_inter
+```
 
+
+
+
+FUNCION SEPARADA PARA PLOTEAR:
+```{python}
+#| label: plot_contact_matrix_function
+def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein"):
     #### significative_distances is the matrix that we are going to plot:
-
+    chain_per_res = structural_info["chain"].values
     plt.figure(figsize=(8, 8))
 
     #cmap='binary' pone los valores con datos en negro y el fondo transparente/blanco
     #origin="lower" to invert y axis
     #PLOTTING INTRACHAIN MATRIX -> green
-    plt.imshow(matrix_intra, cmap="Greens", interpolation="none", origin="lower")
+    plt.imshow(intrachain_matrix, cmap="Greens", interpolation="none", origin="lower")
     #PLOTTING INTRACHAIN MATRIX -> red
-    plt.imshow(matrix_inter, cmap="Reds", interpolation="none", origin="lower")
+    plt.imshow(interchain_matrix, cmap="Reds", interpolation="none", origin="lower")
     #####dato: Al haber NA, el segundo imshow no tapa al primero donde no hay datos
     
 
@@ -447,22 +530,37 @@ def plot_contact_matrix(structural_info, distance_matrix, pdb_id="Protein"):
 
     plt.show()
 
-#Lo hace todo
-
-for id, element in df_conjunto.items():
-    print(id)
-    num_chains = element["chain"].nunique()
-    print(f"Number of chains: {num_chains}")
-    m_dist = distance_matrix(element) 
-    plot_contact_matrix(element, m_dist, pdb_id=id) #### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
 ```
 
 4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
 
+## Para que funcione todo:
 
+```{python}
 
-
-# Prueba
-pdb_list = ["1RBP", "1QRE", "1DGF"]
+pdb_list = ["1RBP"]
+# pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
-    to csv
+    ###ruta para guradar donde querais
+    # hay qu eañadir la r para que cambie las \ a / (o cambiarlas a mano)
+    filename=rf"C:\Users\marta\Desktop\MÁSTER\STRBIO\Practica\{id}.pdb"
+
+    #dataframe con los metadatos -> df_metadata_info
+    df_metadata_info = save_metadata(id, filename)
+
+    #dataframe con la info estructural -> df_struct_info
+    df_struct_info = get_structural_info(id)
+
+    #matriz de distancias -> dist_matrix
+    dist_matrix = distance_matrix(df_struct_info)
+
+    #matriz de contacto: intracadena (intra_contact_matrix) e intercadena (inter_contact_matrix)
+    intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+
+    #para plotear la matiz de contacto
+    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)
+    ###IDEA PODRÍAMOS GUARDAR LA IMAGEN EN UN .JPG EN EL DIRECTORIO!!!
+```
+
+
+
