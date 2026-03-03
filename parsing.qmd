@@ -283,8 +283,8 @@ def save_metadata(pdb_id, filename=None):
     
     if filename:
         # Export the DataFrame to a CSV file
-        df.to_csv(filename, index=False) # index=False to prevent writing row numbers
-        print(f"Metadata for {pdb_id} successfully saved to {filename}")
+        df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
 
     return df
 ```
@@ -523,7 +523,7 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 
     # Plot Intra-chain contacts in Green
     plt.imshow(intrachain_matrix, 
-              cmap="Greens", 
+              cmap="Greens_r", 
               interpolation="none", # Prevents  (each pixel represents one residue)
               origin="lower") # origin="lower" to ensure the (0,0) index starts at the bottom-left
 
@@ -535,40 +535,60 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
               origin="lower")
 
     # Manually creating patches for the legend
-    green_patch = mpatches.Patch(color="green", label="Intra-chain contact") #Mejor llamarlo green_patch no? O se llama blue por algo en específico?
-    red_patch = mpatches.Patch(color="red", label="Inter-chain contact")
+    green_patch = mpatches.Patch(color="green", 
+                                label="Intra-chain contact") 
+    red_patch = mpatches.Patch(color="red", 
+                              label="Inter-chain contact")
     patches = [green_patch, red_patch]
     
     # Adding legend
-    #bbox_to_anchor to add legend out of the plot
-    plt.legend(handles=patches, loc="upper right", bbox_to_anchor=(1.35, 1))
+    plt.legend(handles=patches, # Text of the legend
+              loc="upper right", # Place of the legend
+              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
  
-    #Title and labels
+    # Title and labels
     plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
     plt.xlabel("Residue Index", fontsize=12)
     plt.ylabel("Residue Index", fontsize=12)
     
-    ####################### EXTRA (ya me decís que opinais)
-    # Líneas divisorias de cadenas
-    idx_changes = np.where(chain_per_res[:-1] != chain_per_res[1:])[0] #dice los indx donde cambia la cadena (va comparando quitando el último residuo (chain_per_res[:-1] y quitando el primero (chain_per_res[1:])))
-    #OPCIÓN B POR SI LO VEIS MAL:
-    # using the first row of the prev matrix generated
-    # first_row = same_chain_bool_matrix[0]
-    # idx_changes = []
-    # for i in range(len(first_row) - 1):
-    #     if first_row[i] != first_row[i+1]:
-    #         idx_changes.append(i)
+    # Identify indices where the chain ID changes by comparing current to next element
+    idx_changes = np.where(chain_per_res[:-1] != chain_per_res[1:])[0] 
+    # List of the start and end points for every chain
+    boundaries = [0] + list(idx_changes + 0.5) + [len(chain_per_res)]
+
+    # Unique chain names in order of appearance
+    unique_chains = []
+    unique_chains_label = []
+    for each_chain in chain_per_res:
+        if each_chain not in unique_chains: 
+            unique_chains.append(each_chain)
+            unique_chains_label.append(f"Chain {each_chain}")
     
+    # Plots the lines between different chains
     for idx in idx_changes:
-        ### adding 0.5: El residuo 0 ocupa el espacio que va desde -0.5 hasta 0.5. Su centro está en 0; luego así no tapamos el dato!
+        # Add 0.5 to place the line exactly between the pixels of two residues
         plt.axhline(y=idx + 0.5, color="black", linestyle="--")
         plt.axvline(x=idx + 0.5, color='black', linestyle="--")
+    
+    # Place the labels of the chain names at the midpoint of each boundary
+    ticks = []
+    for i in range(len(boundaries) - 1):
+        midpoint = (boundaries[i] + boundaries[i+1]) / 2
+        ticks.append(midpoint)
 
+    # Set the ticks and labels on both axes
+    plt.xticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    plt.yticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    
+    plt.tight_layout() # Ensures labels/legend don't get cut off
     plt.show()
 
-    if filename:
-        ###guardar en png?
-
+    if filename: # Check if a filename was provided to save the image
+        # Save the figure as a PNG file
+        plt.savefig(f"{filename}.png", 
+                    dpi=300, # dpi=300 ensures high resolution
+                    bbox_inches="tight") # bbox_inches="tight" prevents labels from being cut off
+        print(f"Contact plot for {pdb_id} successfully saved to {filename}.png")
 ```
 
 4. Try to interpret the plots. Can you identify any structure in the contact maps? If so, which ones? Determine the type of structure as well (monomer,homo- or hetero- dimer, tetramer… ).
@@ -577,8 +597,8 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 
 ```{python}
 
-pdb_list = ["1RBP"]
-# pdb_list = ["1RBP", "1QRE", "1DGF"]
+#pdb_list = ["1RBP"]
+pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
     ###ruta para guradar donde querais
     # hay qu eañadir la r para que cambie las \ a / (o cambiarlas a mano)
@@ -594,7 +614,7 @@ for id in pdb_list:
     dist_matrix = distance_matrix(df_struct_info)
 
     #matriz de contacto: intracadena (intra_contact_matrix) e intercadena (inter_contact_matrix)
-    intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+    intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix, min_distance=0)
 
     #para plotear la matiz de contacto
     plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)
