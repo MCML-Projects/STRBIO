@@ -237,6 +237,32 @@ def save_metadata_csv(pd_list, filename):
 (Lo he intentado hacer sin API porque gema me ha rallado con el enunciado y creo que modesto se refiere a que lo hagamos así ⬇⬇⬇⬇⬇)
 
 Como en el enunciado dice que extraigamos la info del .pdb tabular creamos esta función para descargar los archivos de cada proteína.
+```{python CheckPROTEIN}
+def CheckPROTEIN(Protein_sequence):
+    '''
+    This function checks if the sequence is compose by aminoacids
+    Input: Sequence
+    Output: Ambiguous nucleotides
+    '''
+    IsPROTEIN=False
+    length=0
+    NonCanonicalAA=[]
+    while IsPROTEIN==False:
+        for aminoacid in Protein_sequence:
+            length+=1
+            if aminoacid not in ['A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']:
+
+                NonCanonicalAA.append('X')
+            else: 
+                NonCanonicalAA.append(aminoacid)
+
+            if length==len(Protein_sequence):
+                IsPROTEIN=True
+    CheckedProteinSequence=''.join(NonCanonicalAA)
+
+    return CheckedProteinSequence
+```
+
 
 ```{python download_pdb_files}
 import requests
@@ -282,9 +308,11 @@ def get_structural_info(pdb_id):
                             }
                     chain = line[21:22].strip()
                     residue_number = line[22:26].strip()
+                    
+                    canonical_chain=CheckPROTEIN(chain)
 
                     coords.append({
-                        "chain": chain,
+                        "chain": canonical_chain,
                         "residue_number": residue_number,
                         "x": float(coord_x),
                         "y": float(coord_y),
