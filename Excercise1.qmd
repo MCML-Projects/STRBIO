@@ -105,3 +105,30 @@ TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 
 [Aquí básicamente pondría el paso a paso que hemos seguido en github, con los commits, etc. para que se vea el proceso de trabajo]
 
+The development of this project has followed a workflow managed via GitHub, in order it can be reproduced.
+
+The following table sumarizes the main stages of the project.
+
+```{python}
+#| echo: false
+table_github = pd.DataFrame({
+    "Phase": [
+        "Setup", 
+        "Metadata", 
+        "Protein structural information", 
+        "Distance matrix", 
+        "Contact maps", 
+        "Report writing"], 
+    "Description":[
+        "Repository initialization and project structuring", 
+        "Access to each protein key information via APIs and store it in a dataframe", 
+        "Get access to PDB files and parse them to gen atomic coordinates",
+        "Compute the distances matrix between $C_{\\alpha}$ atoms",
+        "Plot intra/interchain contacts giving a threshold",
+        "Create the final file and include all the previous analysis"]})
+table_github
+```
+
+Every modification is documented through a descriptive commit message.
+
+**Repository Access**: https://github.com/MCML-Projects/STRBIO.git 
