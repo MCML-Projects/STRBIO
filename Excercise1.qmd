@@ -7,6 +7,13 @@ date: 04/03/2026
 
 # Introduction
 
+Structural bioinformatics use data resources, algorithms and tool to study, analyze, predict and understand biomacromolecular structures. The structural information with high resolution over the biological systems allows the scientific comunity to known its functions and the effects of modifications on it.
+
+The proteins are macromoleculues which function is highly related with their structure. The structure of proteins is distinguisehed into four levels, which depends on folding. The folding is due by non-covalent interactions between the atoms of residues of the same molecule, intramolecular, or other molecule, intermolecular. The structural bioinformatics try to characterize 
+
+
+
+
 ## Objective
 
 
@@ -16,6 +23,12 @@ date: 04/03/2026
 
 ## Data Collection
 [Describir que los hemos sacado de lo que nos ha dado el profesor pero añadir algo más sobre las proteínas, de donde salen, info principal de la página de PDB, etc.]
+
+RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is an organization which holds a database of exprimentally determined, and also predicted, tridimensional structures of proteins, nucleic acids and macromolecular complexes. 
+
+Every protein uploaded in this database is identified with an alphanumeric identifier of 4 characters long. This identifier is used to gain access to each protein's information.
+
+The tridimensional structures analyzed in this project belongs to the Plasma Retinol-Binding Protein Precursor of *Homo sapiens*, the Carbonic Anhydrase of *Methanosarcina thermophila* and the Catalase of *Homo sapiens*  proteins whose PDB identifier are *1RBP*, *1QRE* and *1DGF*, respectively.
 
 ## Parsing PDB Files
 [Explicar el objetivo de esta función y describir las partes más importantes del código. Incluso por simplificar se puede meter una tabla con metadato -> de donde se extrae -> parte del código que lo hace]
