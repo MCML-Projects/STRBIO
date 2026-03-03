@@ -1,0 +1,54 @@
+---
+title: Ex.1 Parsing Protein Structures
+format: html
+Authors: "Marta Aransay, Carlota de la Concepción, Marta Rodrigo, Lucía Santos"
+date: 04/03/2026
+---
+
+# Introduction
+
+## Objective
+
+
+---
+
+# Methods
+
+## Data Collection
+[Describir que los hemos sacado de lo que nos ha dado el profesor pero añadir algo más sobre las proteínas, de donde salen, info principal de la página de PDB, etc.]
+
+## Parsing PDB Files
+[Explicar el objetivo de esta función y describir las partes más importantes del código. Incluso por simplificar se puede meter una tabla con metadato -> de donde se extrae -> parte del código que lo hace]
+
+## Metadata Extraction
+
+## Distance and Contact Map Calculations
+
+[Primero hacer una introduccion a que es la distancia el mapa de contacto (por qué son útiles), meter alguna explicacion matemática, y luego lo mismo que antes, describir las partes más importantes del código.]
+
+\[
+d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
+\]
+
+---
+
+# Results
+
+TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
+
+---
+
+# Discussion
+
+---
+
+# Conclusion
+
+---
+
+# Annexes
+
+## Work Register
+
+[Aquí básicamente pondría el paso a paso que hemos seguido en github, con los commits, etc. para que se vea el proceso de trabajo]
+
