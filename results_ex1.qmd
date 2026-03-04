@@ -661,7 +661,7 @@ for id in pdb_list:
   print(f"Number of chains: {num_chains}")
   dist_matrix = distance_matrix(df_struct_info) 
   intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
-  plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id)
+  plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id, chains=['A'])
   print("\n\n")
 ```
 
@@ -671,23 +671,9 @@ The 1QRE contact map exhibits prominent clusters of contacts running parallel to
 
 Finally, if inter-chain distances are included, discrete contact zones appear between the three different chain identifiers. This represents the quaternary structure, specifically the trimeric interfaces where the three subunits interact and assemble to form the functional protein complex.
 
+The 1DGF contact map reveals prominent segments oriented both parallel and perpendicular to the main diagonal. This dual pattern represents a complex $\alpha/\beta$ architecture, where the parallel lines indicate parallel $\beta$-sheets and the perpendicular segments confirm the presence of antiparallel $\beta$-strands within the same fold. A dense thickening is observed along the entire main diagonal, indicating the presence of multiple $\alpha$-helices, which are characterized by a high frequency of $(i, i+4)$ local interactions.
 
-## MIRAR LO DEL TRIMERO
+This pattern is consistently manifested across the diagonal quadrants of the contact matrix; since this pattern repeats four times with high regularity, it suggests that the protein is composed of four identical subunits with the same structural composition. The contacts displayed in the off-diagonal quadrants (indicated in red) represent the interactions between the different polypeptide chains—consistently with the metadata identifying a tetrameric structure—exhibiting a symmetric distribution along the main diagonal. Mapping the chains from bottom-to-top and left-to-right as A, B, C, and D allows for a direct comparison of inter-chain interactions. The analysis reveals that the highest density of contacts occurs between pairs A-B, A-C, B-D, and D-C, whereas a significantly lower number of contacts is observed in the quadrants corresponding to the A-D and B-C interfaces.
 
-The $beta$-strands parallel paralelas lejanas a la diagonal. 
-The $alpha$-helix como lineas paralelas cercanas a la diagonal
-The $alpha$-helix and $beta$-strands como perpendicular a la diagonal
-
-1DGF ->"The contact map for 1DGF reveals a more complex architectural pattern compared to the purely $\beta$-sheet structure of 1RBP. As a member of the periplasmic binding protein family, 1DGF exhibits an $\alpha/\beta$ fold, which is clearly reflected in the matrix.
-
-## REVISAR
-
-The most notable features in this map are:
-
-Parallel $\beta$-sheets:  This indicates the presence of a central parallel $\beta$-sheet, a hallmark of the Rossmann-like fold found in many sugar-binding proteins.
-
-$\alpha$-Helical signatures: Thickened, dense regions immediately adjacent to the main diagonal represent the local $(i, i+4)$ contacts characteristic of $\alpha$-helices that pack against the central $\beta$-strands.
-
-Domain Organization: The map displays two distinct 'blocks' or clusters of contacts, corresponding to the two-domain structure of the protein. These domains are connected by flexible hinge regions, which appear as areas with fewer long-range contacts between the two main diagonal clusters.
 
 

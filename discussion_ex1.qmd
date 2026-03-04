@@ -12,7 +12,7 @@ Despite the metadata retrieved from the PDB indicating only a single chain, a co
 
 The last one, the 1DGE protein shows 
 
-Comparacion entre estrucutras (monometro, trimero, cuarteto¿?)
+Comparacion entre estrucutras (monometro, trimero, tetramero)
 
 Unlike 1RBP, the 1DGF map shows lines running parallel to the main diagonal.
 
