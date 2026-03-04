@@ -569,7 +569,7 @@ def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, cha
 
 ## Structural Metadata and Parsing
 
-The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.\_
+The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for the robust handling of non-canonical amino acids and multi-chain complexes.Furthermore, a comprehensive metadata information file was generated for each entry, storing key parameters such as the PDB ID, protein name, source organism, and determination method. This file also includes administrative and structural details, specifically the authors, release dates, resolution, number of peptide chains, and the count of other molecular entities (such as ligands or water molecules).
 
 ```{python}
 #| label: printing_metadata_info
@@ -616,15 +616,21 @@ This dual-matrix approach allows for a clear visual and numerical distinction be
 #| echo : false
 
 for id in pdb_list:
-  intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
-  print(f"INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
-  print("\n")
-  print(intra_contact_matrix)
-  print("\n\n")
-  print(f"INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
-  print("\n")
-  print(inter_contact_matrix)
-  print("\n\n\n")
+    df_struct_info = get_structural_info(id)
+    print(f"PDB ID: {id}")
+    num_chains = df_struct_info["chain"].nunique()
+    print(f"Number of chains: {num_chains}")
+    dist_matrix = distance_matrix(df_struct_info) 
+    intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+
+    print(f"INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
+    print("\n")
+    print(intra_contact_matrix)
+    print("\n\n")
+    print(f"INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
+    print("\n")
+    print(inter_contact_matrix)
+    print("\n\n\n")
 
 ```
 
@@ -653,7 +659,8 @@ for id in pdb_list:
 
   num_chains = df_struct_info["chain"].nunique()
   print(f"Number of chains: {num_chains}")
-  m_dist = distance_matrix(df_struct_info) 
+  dist_matrix = distance_matrix(df_struct_info) 
+  intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
   plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id)
   print("\n\n")
 ```
