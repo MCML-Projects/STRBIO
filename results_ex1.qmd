@@ -667,8 +667,11 @@ for id in pdb_list:
 
 The 1RBP protein shows discrete segments oriented perpendicularly to the main diagonal. These patterns are the classic "signature" of antiparallel $\beta$-sheets, which in this case constitute the eight-stranded $\beta$-barrel that forms the protein's central cavity. The regular spacing between the off-diagonal clusters indicates the highly organized hydrogen-bonding network between adjacent $\beta$-strands. The contacts between the first and the last strands are also visible as distal signals. This represents the closed barrel structure. Furthermore, in the C-terminal region, the main diagonal exhibits a distinct thickening, which represents the presence of an $\alpha$-helical segment in this specific area.
 
-The 1QRE protein, due to the composition, just green lines appear. This chain has parallel $beta$-sheets and $alpha$-helix. Also there are contacts between $alpha$-helix and $beta$-strands. 
-The parallel $beta$-sheets are represented as parallel lines to the diagonal and far from it. 
+The 1QRE contact map exhibits prominent clusters of contacts running parallel to the main diagonal. These patterns represent parallel $\beta$-sheets, which characterize the central core of the protein's fold. A significant thickening is observed along the entire main diagonal. This indicates a high density of $(i, i+4)$ local interactions, representing the presence of multiple $\alpha$-helices packed against the central sheets. The plot displays three clearly defined blocks of contacts, within which several segments run parallel to the main diagonal; these patterns indicate the structural packing and close-range interactions between the $\alpha$-helices and $\beta$-sheets
+
+Finally, if inter-chain distances are included, discrete contact zones appear between the three different chain identifiers. This represents the quaternary structure, specifically the trimeric interfaces where the three subunits interact and assemble to form the functional protein complex.
+
+
 ## MIRAR LO DEL TRIMERO
 
 The $beta$-strands parallel paralelas lejanas a la diagonal. 

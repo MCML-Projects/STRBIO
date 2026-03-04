@@ -6,7 +6,9 @@ In particular, the developed pipeline was applied to characterize the intramolec
 
 The analysis of 1RBP (Retinol-Binding Protein) confirms its characteristic $\beta$-barrel tertiary structure. When compared to the reference data in the Protein Data Bank (PDB), where the structure was determined via X-ray diffraction at a high resolution of 2.0 Å, the generated contact map precisely aligns with the experimentally observed conformation. The contact matrix highlights the $beta$-barrel core where predominant anti-diagonal signals correspond to the eight antiparallel $\beta$-strands that wrap into a closed barrel, a hallmark of the lipocalin family. In addition to the barrel, the map identifies a specific $\alpha$-helical zone located near the C-terminus. This is visible in the contact map as a localized area of increased density along the main diagonal, representing the short-range $(i, i+4)$ interactions characteristic of helical turns.
 
-THe second one, the 1QRE protein shows
+THe second one, the 1QRE protein plot displays three clearly defined blocks of contacts, which correspond to the three subunits observed in the PDB tertiary structure; within these blocks, several segments run parallel to the main diagonal, indicating the structural packing between $\alpha$-helices and $\beta$-sheets. Finally, the discrete contact zones appearing between different chain identifiers represent the quaternary structure, specifically the trimeric interfaces where the three subunits interact to form the functional protein complex.
+
+Despite the metadata retrieved from the PDB indicating only a single chain, a comparison between the contact map and the PDB 3D structure view suggests the presence of three subunits with identical folds. This observation implies that the functional protein is likely a homotrimer, where the quaternary structure is composed of three identical subunits that were not explicitly detailed as such in the initial metadata.
 
 The last one, the 1DGE protein shows 
 
