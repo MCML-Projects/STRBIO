@@ -547,6 +547,9 @@ Contacts were defined using a specific distance threshold, set by default betwee
 
 To visualize the computed contact matrices of each protein @lst-contact-map function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively, which makes it easier the identification of oligomers.
 
+A key feature of this function is its ability to isolate and analyze contact maps for specific protein chains using the 'chains' argument, which significantly streamlines the visualization of complex structures.
+
+
 ### Code Implementation
 
 ```{python}
@@ -613,11 +616,38 @@ def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distanc
 #| label: lst-contact-map
 #| lst-cap: "Function for plotting the contact map."
 #| code-fold: true
-#| code-summary: "Click to see plot_contact_map."
+#| code-summary: "Click to see plot_contact_map function."
 
 def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, chains=None, pdb_id="-", filename=None):
     """
-    falta docstring
+    Plot a contact map (intra-chain and inter-chain) visualization for protein structure analysis.
+
+    Parameters
+    ----------
+    structural_info : pds.DataFrame
+        DataFrame containing structural information with at least a "chain" column
+        indicating the chain identifier for each residue.
+    intrachain_matrix : np.ndarray
+        2D contact matrix representing contacts within chains. 
+        Non-contact regions should be NaN to avoid overwriting inter-chain data.
+    interchain_matrix : np.ndarray
+        2D contact matrix representing contacts between different chains. 
+        Non-contact regions should be NaN.
+    chains : list of str, optional
+        List of chain identifiers to include in the plot. 
+        If None (default), all chains in structural_info are used.
+    pdb_id : str, optional
+        PDB identifier for display in the plot title. 
+        Default is "-".
+    filename : str, optional
+        If provided, the plot will be saved as a PNG file with this filename
+        (without extension). 
+        If None (default), the plot is not saved to file.
+
+    Returns
+    -------
+    None
+        Displays the plot and optionally saves it to file. 
     """
     if chains:
         # Check if all requested chains are present in the structural information
@@ -638,21 +668,22 @@ def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, cha
         
     # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
-    
-    plt.figure(figsize=(10, 12)) # Size of the plot
 
     # Plot Intra-chain contacts in Green       
     plt.imshow(intrachain_matrix, 
               cmap="Greens_r", # Sets the color palette to Reversed Greens
               interpolation="none", # Prevents blurring; each pixel represents exactly one residue
-              origin="lower") # Places the (0,0) index at the bottom-left corner
+              origin="lower", # Places the (0,0) index at the bottom-left corner
+              aspect="equal") 
 
     # Plot Inter-chain contacts in Green
     # Since contact matrices contain NaNs, the second plot won't overwrite the first
     plt.imshow(interchain_matrix, 
               cmap="Reds_r", 
               interpolation="none", 
-              origin="lower")
+              origin="lower",
+              aspect="equal"
+              )
     
     # Manually creating patches for the legend
     green_patch = mpatches.Patch(color="green", 
@@ -664,7 +695,7 @@ def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, cha
     # Adding legend
     plt.legend(handles=patches, # Text of the legend
               loc="upper right", # Place of the legend
-              bbox_to_anchor=(1.35, 1)) # bbox_to_anchor places legend outside the plot area
+              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
  
     # Title and labels
     plt.title(f"CONTACT MAP (Protein: {pdb_id})", fontsize=14)
@@ -807,14 +838,13 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 
 ```{python}
 #| label: fig-contact-maps
+#| echo : false
 #| fig-cap: "Contact maps for the analyzed proteins (1RBP, 1QRE, 1DGF)."
 #| fig-subcap: 
 #|   - "Contact map for the protein 1RBP"
 #|   - "Contact map for the protein 1QRE"
 #|   - "Contact map for the protein 1DGF"
 #| layout-ncol: 1
-#| fig-width: 4
-#| fig-height: 4
 #| fig-show: hold
 #| fig-align: center
 #| crossref:
@@ -831,8 +861,8 @@ for id in pdb_list:
 
     plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id)
 
-    plt.show() 
-    plt.close('all')
+    # plt.show() 
+    # plt.close('all')
 
 ```
 
