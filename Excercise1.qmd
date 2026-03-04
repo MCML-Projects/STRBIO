@@ -356,8 +356,6 @@ To understand a protein's three-dimensional structure, we must measure the dista
 Mathematically, since each amino acid is represented by the Cartesian coordinates $(x, y, z)$ of its alpha carbon ($C\alpha$), the distance $d$ between two residues $i$ and $j$ is calculated using the three-dimensional *Euclidean distance formula*:
 $$d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}$$
 
-As a result, the matrix is square and symmetric, with diagonal elements always being zero, because they represent the distance of a residue to itself. Values close to the diagonal typically represent local interactions, while values far from the diagonal indicate long-range contacts between residues that are distant in the linear sequence but close in 3D space. 
-
 To compute this, we implemented the @lst-distance-matrix, which extracts the $(x, y, z)$ coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).
 
 
@@ -744,7 +742,7 @@ for id in pdb_list:
 
 ## Distance Matrix
 
-Structural information allows to calculate the distance matrix. The distance matrix contains the distance between carbon-alpha ($C\alpha$) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates $(x, y, z)$ of the atoms.
+Structural information allows to calculate the distance matrix. As mentioned before, the distance matrix contains the distance between carbon-alpha ($C\alpha$) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates $(x, y, z)$ of the atoms.
 
 On the diagonal, the values are equal to 0 because the amino acids being compared are the same. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.
 
