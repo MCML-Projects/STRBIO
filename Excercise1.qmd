@@ -837,21 +837,41 @@ This pattern is consistently manifested across the diagonal quadrants of the con
 
 # Discussion
 
+This project has successfully implemented a computational approach to analyze protein architecture through the generation and interpretation of distance and contact matrices. By processing structural data from the PDB, we have achieved an efficient generation of contact maps, providing a clear visual representation of the complex three-dimensional folding of the studied proteins. 
+
+In particular, the developed pipeline was applied to characterize the intramolecular and intermolecular interaction patterns of proteins 1RBP, 1QRE, and 1DGF, effectively mapping their tertiary and quaternary organizations. 
+
 ## `1RBP`
+
+The analysis of 1RBP (Retinol-Binding Protein) confirms its characteristic $\beta$-barrel tertiary structure. When compared to the reference data in the Protein Data Bank (PDB), where the structure was determined via X-ray diffraction at a high resolution of 2.0 Å, the generated contact map precisely aligns with the experimentally observed conformation. The contact matrix highlights the $beta$-barrel core where predominant anti-diagonal signals correspond to the eight antiparallel $\beta$-strands that wrap into a closed barrel, a hallmark of the lipocalin family. In addition to the barrel, the map identifies a specific $\alpha$-helical zone located near the C-terminus. This is visible in the contact map as a localized area of increased density along the main diagonal, representing the short-range $(i, i+4)$ interactions characteristic of helical turns.
 
 {{< mol-rcsb 1RBP viewportShowAnimation=false >}}
 
 ## `1QRE`
 
+
+The second one, the 1QRE contact map displays three clearly defined blocks of contacts which, in comparison with the protein structure resolved via X-ray diffraction at a high resolution of 1.46 Å, correspond to the three subunits observed in the PDB tertiary structure. Within these blocks, several segments run parallel to the main diagonal, indicating the structural packing between $\alpha$-helices and $\beta$-sheets. Finally, the discrete contact zones appearing between different chain identifiers represent the quaternary structure, specifically the trimeric interfaces where the three subunits interact to form the functional protein complex
+
+Despite the metadata retrieved from the PDB indicating only a single chain, a comparison between the contact map and the PDB 3D structure view suggests the presence of three subunits with identical folds. This observation implies that the functional protein is likely a homotrimer, where the quaternary structure is composed of three identical subunits that were not explicitly detailed as such in the initial metadata.
+
 {{< mol-rcsb 1QRE viewportShowAnimation=false >}}
 
 ## `1DGF`
 
+The last one, the 1DGE contact map reveals a quaternary structure composed of four identical subunits, identifying it as a homotetramer. This observation is highly consistent with the experimentally resolved structure obtained via X-ray diffraction at a high resolution of 1.5 Å. Both the 3D visualization in the PDB and the contact map exhibit a fold characterized by antiparallel $\beta$-sheets organized into a barrel structure. These structural elements are packed against $\alpha$-helices, which further facilitate inter-helical interactions. Furthermore, the PDB data illustrates how the monomers interact; they show a higher density of contacts with adjacent subunits and a significantly lower degree of contact with the monomer located diagonally across the assembly. Consequently, the patterns depicted in the contact map align perfectly with the experimental structure archived in the PDB.
+
 {{< mol-rcsb 1DGF viewportShowAnimation=false >}}
+
+Consequently, contact maps provide a comprehensive visualization of how distinct protein regions interact and reveal the specific secondary and tertiary structural motifs that compose them. As demonstrated throughout this project, these maps effectively reflect the organizational complexity of monomeric, trimeric, and tetrameric assemblies.
+
+Furthermore, contact maps facilitate the identification of recurring structural patterns and the characterization of inter-chain contacts within the quaternary structure. The close agreement between these contact maps and the high-resolution, experimentally resolved structures archived in the PDB underscores the utility of distance-based matrices for elucidating the intricate interactions and architectures of proteins.
 
 ---
 
 # Conclusion
+In this project, we have successfully developed a robust computational pipeline to analyze protein structures through distance and contact matrices. By leveraging Python and structural data from the PDB, we achieved the efficient generation of contact maps, providing a clear visual representation of complex three-dimensional folds.
+A critical aspect of this work was the implementation of a coherent distance filtering strategy. By applying thresholds between 6 and 12 Å, we effectively eliminated structural noise, retaining only the biologically significant interactions. This allowed for a precise distinction between intra-chain (tertiary) and inter-chain (quaternary) contacts, pinpointing the exact regions responsible for subunit packing and overall complex stabilization.The results demonstrate that contact maps are powerful tools for structural biology, as they condense thousands of atomic coordinates into identifiable geometric patterns—such as the characteristic signatures of $\alpha$-helices and $\beta$-sheets. 
+In conclusion, the methodologies applied in this study provide a reliable and scalable framework for the comparative analysis of protein architectures and their functional interfaces.
 
 ---
 
