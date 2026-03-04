@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.8.26">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2026-04-03">
+
+<title>Ex.1 Parsing Protein Structures</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="Excercise1_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Excercise1_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Excercise1_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Excercise1_files/libs/quarto-html/axe/axe-check.js" type="module"></script>
+<script src="Excercise1_files/libs/quarto-html/popper.min.js"></script>
+<script src="Excercise1_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Excercise1_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Excercise1_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Excercise1_files/libs/quarto-html/quarto-syntax-highlighting-587c61ba64f3a5504c4d52d930310e48.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Excercise1_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Excercise1_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Excercise1_files/libs/bootstrap/bootstrap-22183fc23a3d1134e2e707b9d7e23b61.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="Excercise1_files/libs/quarto-contrib/molstar-v3.13.0/molstar.js"></script>
+<link href="Excercise1_files/libs/quarto-contrib/molstar-v3.13.0/molstar.css" rel="stylesheet">
+<link href="Excercise1_files/libs/quarto-contrib/molstar-v3.13.0/app-container.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction"><span class="header-section-number">1</span> Introduction</a>
+  <ul class="collapse">
+  <li><a href="#objective" id="toc-objective" class="nav-link" data-scroll-target="#objective"><span class="header-section-number">1.1</span> Objective</a></li>
+  </ul></li>
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods"><span class="header-section-number">2</span> Methods</a>
+  <ul class="collapse">
+  <li><a href="#data-collection" id="toc-data-collection" class="nav-link" data-scroll-target="#data-collection"><span class="header-section-number">2.1</span> Data Collection</a></li>
+  <li><a href="#parsing-pdb-files" id="toc-parsing-pdb-files" class="nav-link" data-scroll-target="#parsing-pdb-files"><span class="header-section-number">2.2</span> Parsing PDB Files</a>
+  <ul class="collapse">
+  <li><a href="#code-implementation" id="toc-code-implementation" class="nav-link" data-scroll-target="#code-implementation"><span class="header-section-number">2.2.1</span> Code Implementation</a></li>
+  </ul></li>
+  <li><a href="#structural-infrormation-extraction-and-distance-matrix-calculation" id="toc-structural-infrormation-extraction-and-distance-matrix-calculation" class="nav-link" data-scroll-target="#structural-infrormation-extraction-and-distance-matrix-calculation"><span class="header-section-number">2.3</span> Structural Infrormation Extraction and Distance Matrix Calculation</a>
+  <ul class="collapse">
+  <li><a href="#code-implementation-1" id="toc-code-implementation-1" class="nav-link" data-scroll-target="#code-implementation-1"><span class="header-section-number">2.3.1</span> Code Implementation</a></li>
+  </ul></li>
+  <li><a href="#contact-map-calculation" id="toc-contact-map-calculation" class="nav-link" data-scroll-target="#contact-map-calculation"><span class="header-section-number">2.4</span> Contact Map Calculation</a>
+  <ul class="collapse">
+  <li><a href="#code-implementation-2" id="toc-code-implementation-2" class="nav-link" data-scroll-target="#code-implementation-2"><span class="header-section-number">2.4.1</span> Code Implementation</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results"><span class="header-section-number">3</span> Results</a>
+  <ul class="collapse">
+  <li><a href="#structural-metadata-and-parsing" id="toc-structural-metadata-and-parsing" class="nav-link" data-scroll-target="#structural-metadata-and-parsing"><span class="header-section-number">3.1</span> Structural Metadata and Parsing</a></li>
+  <li><a href="#distance-matrix" id="toc-distance-matrix" class="nav-link" data-scroll-target="#distance-matrix"><span class="header-section-number">3.2</span> Distance Matrix</a></li>
+  <li><a href="#contact-map-analysis" id="toc-contact-map-analysis" class="nav-link" data-scroll-target="#contact-map-analysis"><span class="header-section-number">3.3</span> Contact Map Analysis</a>
+  <ul class="collapse">
+  <li><a href="#quaternary-structure-interpretation" id="toc-quaternary-structure-interpretation" class="nav-link" data-scroll-target="#quaternary-structure-interpretation"><span class="header-section-number">3.3.1</span> Quaternary Structure Interpretation</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion"><span class="header-section-number">4</span> Discussion</a>
+  <ul class="collapse">
+  <li><a href="#rbp" id="toc-rbp" class="nav-link" data-scroll-target="#rbp"><span class="header-section-number">4.1</span> <code>1RBP</code></a></li>
+  <li><a href="#qre" id="toc-qre" class="nav-link" data-scroll-target="#qre"><span class="header-section-number">4.2</span> <code>1QRE</code></a></li>
+  <li><a href="#dgf" id="toc-dgf" class="nav-link" data-scroll-target="#dgf"><span class="header-section-number">4.3</span> <code>1DGF</code></a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion"><span class="header-section-number">5</span> Conclusion</a></li>
+  <li><a href="#annexes" id="toc-annexes" class="nav-link" data-scroll-target="#annexes"><span class="header-section-number">6</span> Annexes</a>
+  <ul class="collapse">
+  <li><a href="#work-register" id="toc-work-register" class="nav-link" data-scroll-target="#work-register"><span class="header-section-number">6.1</span> Work Register</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Ex.1 Parsing Protein Structures</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 3, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="introduction" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Introduction</h1>
+<p>Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent intramolecular interactions between residues of the same polypeptide chain, whereas intermolecular interactions contribute to quaternary structure formation. These interactions include hydrogen bonds, hydrophobic interactions and electrostatic forces. Structural bioinformatics aims to characterize these interactions through computational analysis of experimentally determined or predicted structures.</p>
+<p>The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB), which stores three-dimensional structures obtained by X-ray crystallography, nuclear magnetic resonance spectroscopy and cryo-electron microscopy. PDB files contain detailed metadata, experimental information, protein sequences, and three-dimensional atomic coordinates. Through computational analysis, this information can be extracted from these files.</p>
+<p>To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα atoms of residues within a protein or between different protein chains. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.</p>
+<p>Nowadays, although modelling and structure prediction methods have achieved high levels of accuracy, the analysis of atomic coordinates is still essential to understand the spatial organization of proteins and macromolecular complexes.</p>
+<section id="objective" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="objective"><span class="header-section-number">1.1</span> Objective</h2>
+<p>The main objective of this project is to implement computational functions to:</p>
+<ol type="1">
+<li>Parse PDB files to extract structural metadata and atomic coordinates.</li>
+<li>Compute pairwise distance matrices between Cα atoms of protein residues.</li>
+<li>Plot contact maps to characterize the structural organization and oligomeric state of the analyzed proteins.</li>
+</ol>
+<hr>
+</section>
+</section>
+<section id="methods" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> Methods</h1>
+<section id="data-collection" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="data-collection"><span class="header-section-number">2.1</span> Data Collection</h2>
+<p>RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes.</p>
+<p>Each protein in this database is identified with a unique four-character alphanumeric identifier. This identifier allows access to detailed information about the protein, such as atomic coordinates, sequence, experimental methodology and associated metadata.</p>
+<p>The structures analyzed in this project correspond to the following proteins:</p>
+<ul>
+<li><strong>Plasma Retinol-Binding Protein Precursor (<em>Homo sapiens</em>, PDB ID: 1RBP)</strong>, which is involved in retinol transport in humans.</li>
+<li><strong>Carbonic Anhydrase (<em>Methanosarcina thermophila</em>, PDB ID: 1QRE)</strong>, which regulates pH by catalyzing the reaction between <span class="math inline">\(CO_2\)</span> and <span class="math inline">\(H_2O\)</span> to produce bicarbonate and protons.</li>
+<li><strong>Catalase (<em>Homo sapiens</em>, PDB ID: 1DGF)</strong>, which protect cells from oxidative damage by decomposing <span class="math inline">\(H_2O_2\)</span> into water and oxygen.</li>
+</ul>
+</section>
+<section id="parsing-pdb-files" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="parsing-pdb-files"><span class="header-section-number">2.2</span> Parsing PDB Files</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Before introducing the main functions of the project, it is important to highlight the implmentation of <a href="#lst-setup-libraries" class="quarto-xref">Function&nbsp;1</a>, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.</p>
+</div>
+</div>
+<p>The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function <a href="#lst-get-metadata" class="quarto-xref">Function&nbsp;4</a>.</p>
+<p>The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.</p>
+<p>The function defined as <a href="#lst-get-metadata" class="quarto-xref">Function&nbsp;4</a> performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it.</p>
+<p>In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function <a href="#lst-api-errors" class="quarto-xref">Function&nbsp;2</a>, which checks the status code of the response and returns an appropriate message in case of an error.</p>
+<p>Once the queries are successful, the function extracts the relevant information from the JSON responses:</p>
+<div id="48ebafb8" class="cell" data-execution_count="1">
+<div class="cell-output cell-output-display" data-execution_count="1">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Metadata</th>
+<th data-quarto-table-cell-role="th">Description</th>
+<th data-quarto-table-cell-role="th">Source (API JSON field)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>PDB ID</td>
+<td>Unique identifier for the protein structure</td>
+<td>rcsb_id</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>Protein Name</td>
+<td>The name of the protein</td>
+<td>rcsb_polymer_entity.pdbx_description</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>Source Organism</td>
+<td>The organism from which the protein was derived</td>
+<td>rcsb_entity_source_organism</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>Determination Method</td>
+<td>The method used to determine the protein struc...</td>
+<td>exptl.method</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>Authors</td>
+<td>The researchers who contributed to the determi...</td>
+<td>rcsb_authors</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>Release Date</td>
+<td>The release date of the structure</td>
+<td>rcsb_accession_info.initial_release_date</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">6</th>
+<td>Resolution</td>
+<td>The resolution of the structure, if applicable</td>
+<td>rcsb_entry_info.resolution_combined</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">7</th>
+<td>Number of Peptide Chains</td>
+<td>The number of peptide chains present in the st...</td>
+<td>rcsb_entry_info.polymer_entity_count_protein</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">8</th>
+<td>Number of Other Molecules</td>
+<td>The number of other molecules (e.g., ligands, ...</td>
+<td>rcsb_entry_info.nonpolymer_entity_count</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function (<a href="#lst-extract-metadata" class="quarto-xref">Function&nbsp;3</a>) is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.</p>
+<p>All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. This is done through the <a href="#lst-get-metadata" class="quarto-xref">Function&nbsp;4</a>, which takes the metadata dictionary and the desired file name as input and saves the DataFrame as a CSV file.</p>
+<section id="code-implementation" class="level3" data-number="2.2.1">
+<h3 data-number="2.2.1" class="anchored" data-anchor-id="code-implementation"><span class="header-section-number">2.2.1</span> Code Implementation</h3>
+<div id="lst-setup-libraries" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-message="false" data-execution_count="2">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-setup-libraries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;1
+</figcaption>
+<div aria-describedby="lst-setup-libraries-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see imported libraries.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1" data-lst-cap="Set up necessary libraries."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.patches <span class="im">as</span> mpatches </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<div id="lst-api-errors" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="3">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-api-errors-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;2
+</figcaption>
+<div aria-describedby="lst-api-errors-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see handle_API_error function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" data-lst-cap="Function for handling HTTP request errors."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_API_error(<span class="bu">id</span>, status_code <span class="op">=</span> <span class="va">None</span>, flag_timeout <span class="op">=</span> <span class="va">False</span>):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Handles HTTP request errors or timeouts and prints informative messages in</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">    order to centralize the management of API request errors.</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co">    id : str</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co">        PDB ID queried in the request.</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co">    status_code : int</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">        HTTP status code returned by the request. </span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">        None by default (in case of timeout error).</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co">    flag_timeout : bool</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co">        Indicates whether the request failed due to a timeout.</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co">        If True, the status_code is ignored.</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co">        alse by default.</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">        bool (True)</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">            True if the request was successful (status code 200).</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">            None returned for any error or timeout condition.</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> flag_timeout: <span class="co"># If a timeout occurred, skip all other checks</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"[408] Timeout error for ID: </span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">."</span>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> status_code <span class="op">==</span> <span class="dv">200</span>: <span class="co"># If the request was successful, returns True</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">True</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> status_code <span class="op">==</span> <span class="dv">301</span> <span class="kw">or</span> status_code <span class="op">==</span> <span class="dv">302</span>:</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Resource has been permanently or temporarily moved</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"[301] or [302] The object was moved to other route"</span>)</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> status_code <span class="op">==</span> <span class="dv">400</span>:</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Request processed but considered unsuccessful</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"[400] Not valid ID: </span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> status_code <span class="op">==</span> <span class="dv">404</span>:</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Request processed but no result was obtained</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"[404] Result not found for ID: </span><span class="sc">{</span><span class="bu">id</span><span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> status_code <span class="op">==</span> <span class="dv">429</span>:</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Request rejected due to request rate limits</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"[429] Error: Too many requests."</span>)</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        <span class="cf">elif</span> status_code <span class="op">==</span> <span class="dv">500</span> <span class="kw">or</span> status_code <span class="op">==</span> <span class="dv">503</span>:</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Request failed due to internal server issues</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="st">"[500] or [503] Internal Server Error"</span>)</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>: <span class="co"># For any other error status code</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"Error: </span><span class="sc">{</span>status_code<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="co"># For all cases except status_code == 200, function returns None</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<div id="lst-extract-metadata" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="4">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-extract-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;3
+</figcaption>
+<div aria-describedby="lst-extract-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see extract_join_metadata function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" data-lst-cap="Function for extracting and joining metadata information."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> extract_join_metadata(data_dict, metadata_key, subkey<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Extract values from a metadata dictionary and join them into a string.</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">    data_dict : dict</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">        Dictionary containing the metadata entries.</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">    metadata_key : str</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">        Key in `data_dict` whose value should be a list.</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">    subkey : str, optional</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Key to use within each list element.  </span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">        If `None` the list elements are used directly.</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co">    str</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">        Comma-separated string of extracted values.</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">        "N/A"` if the list is empty or no values were found.</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Retrieve the list of items associated with metadata_key</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    items <span class="op">=</span> data_dict.get(metadata_key, []) <span class="co"># default to an empty list if not found</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    extracted_items <span class="op">=</span> [] <span class="co"># empty list</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> subkey: <span class="co"># In case there is a subkey</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> item <span class="kw">in</span> items: <span class="co"># Iterate through items</span></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Get the value for the specific subkey</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>            value <span class="op">=</span> item.get(subkey) <span class="co"># NO second arg to avoid list of "N/A"</span></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> value: </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>                <span class="co"># If there is a value, it is added to the list</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>                extracted_items.append(value)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>   </span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Return a string (comma-separated) if data was found </span></span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> extracted_items:</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">", "</span>.join(extracted_items) </span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>: <span class="co"># Otherwise, return "N/A"</span></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="st">"N/A"</span> </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<div id="lst-get-metadata" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="5">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-get-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;4
+</figcaption>
+<div aria-describedby="lst-get-metadata-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see get_metadata_info function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" data-lst-cap="Function for getting the metadata information."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_metadata_info(pdb_id, filename<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Parse a PDB (Protein Data Bank) file and extract metadata information.</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Extracts and formats some metadata via extract_join_metadata function.</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Handles API errors via handle_API_error function.</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="co">    Stores the results in a pandas DataFrame.</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">    If a path is provided, writes it to a CSV file.</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">    pdb_id : str</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Unique identifier for the PDB file.</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">    filename : str, optional</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">        The output CSV file path where metadata will be saved.</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a><span class="co">    df : pd.DataFrame</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a><span class="co">        A pandas DataFrame containing the metadata.</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="co">        Or None if an error occurs.</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Define endpoints for RCSB PDB Data API </span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Entry API: Global metadata -&gt; PDB ID; Determination Method; Authors; </span></span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    <span class="co">#                               Release Date; Resolution; Number of peptide chains; </span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    <span class="co">#                               Number of Other molecules</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    url_entry <span class="op">=</span> <span class="ss">f"https://data.rcsb.org/rest/v1/core/entry/</span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Entity API: Specific data for cheminal entities</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>    entity_id <span class="op">=</span> <span class="dv">1</span> <span class="co"># Using 1 for the primary polymer (protein)</span></span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    url_entity <span class="op">=</span> <span class="ss">f"https://data.rcsb.org/rest/v1/core/polymer_entity/</span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss">/</span><span class="sc">{</span>entity_id<span class="sc">}</span><span class="ss">"</span> </span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Handling with Timeout and Errors (only two possibilities: 200 / 404)</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>        response_entry <span class="op">=</span> requests.get(url_entry,</span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>                                     timeout <span class="op">=</span> <span class="dv">100</span>) </span>
+<span id="cb4-36"><a href="#cb4-36" aria-hidden="true" tabindex="-1"></a>        response_entity <span class="op">=</span> requests.get(url_entity,</span>
+<span id="cb4-37"><a href="#cb4-37" aria-hidden="true" tabindex="-1"></a>                                      timeout <span class="op">=</span> <span class="dv">100</span>) </span>
+<span id="cb4-38"><a href="#cb4-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-39"><a href="#cb4-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> requests.exceptions.Timeout: <span class="co"># Handling Timeout Error</span></span>
+<span id="cb4-40"><a href="#cb4-40" aria-hidden="true" tabindex="-1"></a>        handle_API_error(pdb_id, flag_timeout <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb4-41"><a href="#cb4-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb4-42"><a href="#cb4-42" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-43"><a href="#cb4-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Validate that PDB ID exists in both endopoints</span></span>
+<span id="cb4-44"><a href="#cb4-44" aria-hidden="true" tabindex="-1"></a>    flag_entry <span class="op">=</span> handle_API_error(pdb_id, status_code <span class="op">=</span> response_entry.status_code)</span>
+<span id="cb4-45"><a href="#cb4-45" aria-hidden="true" tabindex="-1"></a>    flag_entity <span class="op">=</span> handle_API_error(pdb_id, status_code <span class="op">=</span> response_entity.status_code)</span>
+<span id="cb4-46"><a href="#cb4-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-47"><a href="#cb4-47" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> flag_entry <span class="kw">or</span> <span class="kw">not</span> flag_entity:</span>
+<span id="cb4-48"><a href="#cb4-48" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb4-49"><a href="#cb4-49" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-50"><a href="#cb4-50" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Execution continues only if a 200 OK status is received</span></span>
+<span id="cb4-51"><a href="#cb4-51" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-52"><a href="#cb4-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Parse JSON responses</span></span>
+<span id="cb4-53"><a href="#cb4-53" aria-hidden="true" tabindex="-1"></a>    data_entry <span class="op">=</span> response_entry.json()</span>
+<span id="cb4-54"><a href="#cb4-54" aria-hidden="true" tabindex="-1"></a>    data_entity <span class="op">=</span> response_entity.json()</span>
+<span id="cb4-55"><a href="#cb4-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-56"><a href="#cb4-56" aria-hidden="true" tabindex="-1"></a>    <span class="co">############ Metadata extraction ############</span></span>
+<span id="cb4-57"><a href="#cb4-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-58"><a href="#cb4-58" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- PDB ID</span></span>
+<span id="cb4-59"><a href="#cb4-59" aria-hidden="true" tabindex="-1"></a>    <span class="bu">id</span> <span class="op">=</span> data_entry.get(<span class="st">"rcsb_id"</span>, <span class="st">"N/A"</span>) <span class="co"># Default to "N/A" if rcsb_id is not found</span></span>
+<span id="cb4-60"><a href="#cb4-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-61"><a href="#cb4-61" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Protein name</span></span>
+<span id="cb4-62"><a href="#cb4-62" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Default to empty dict to safely chain subsequent .get() calls</span></span>
+<span id="cb4-63"><a href="#cb4-63" aria-hidden="true" tabindex="-1"></a>    polymer_entity <span class="op">=</span> data_entity.get(<span class="st">"rcsb_polymer_entity"</span>, {}) </span>
+<span id="cb4-64"><a href="#cb4-64" aria-hidden="true" tabindex="-1"></a>    prot_name <span class="op">=</span> polymer_entity.get(<span class="st">"pdbx_description"</span>, <span class="st">"N/A"</span>) </span>
+<span id="cb4-65"><a href="#cb4-65" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-66"><a href="#cb4-66" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Source Organism</span></span>
+<span id="cb4-67"><a href="#cb4-67" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract and format via extract_join_metadata</span></span>
+<span id="cb4-68"><a href="#cb4-68" aria-hidden="true" tabindex="-1"></a>    source_organisms <span class="op">=</span> extract_join_metadata(data_entity,</span>
+<span id="cb4-69"><a href="#cb4-69" aria-hidden="true" tabindex="-1"></a>                                            <span class="st">"rcsb_entity_source_organism"</span>, </span>
+<span id="cb4-70"><a href="#cb4-70" aria-hidden="true" tabindex="-1"></a>                                            subkey<span class="op">=</span><span class="st">"ncbi_scientific_name"</span>) </span>
+<span id="cb4-71"><a href="#cb4-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-72"><a href="#cb4-72" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Determination Method</span></span>
+<span id="cb4-73"><a href="#cb4-73" aria-hidden="true" tabindex="-1"></a>    det_method <span class="op">=</span> extract_join_metadata(data_entry, </span>
+<span id="cb4-74"><a href="#cb4-74" aria-hidden="true" tabindex="-1"></a>                                      <span class="st">"exptl"</span>, </span>
+<span id="cb4-75"><a href="#cb4-75" aria-hidden="true" tabindex="-1"></a>                                      subkey<span class="op">=</span><span class="st">"method"</span>)</span>
+<span id="cb4-76"><a href="#cb4-76" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-77"><a href="#cb4-77" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Authors</span></span>
+<span id="cb4-78"><a href="#cb4-78" aria-hidden="true" tabindex="-1"></a>    primary_cit <span class="op">=</span> data_entry.get(<span class="st">"rcsb_primary_citation"</span>, {}) </span>
+<span id="cb4-79"><a href="#cb4-79" aria-hidden="true" tabindex="-1"></a>    authors <span class="op">=</span> extract_join_metadata(data_entry, </span>
+<span id="cb4-80"><a href="#cb4-80" aria-hidden="true" tabindex="-1"></a>                                   <span class="st">"rcsb_authors"</span>) </span>
+<span id="cb4-81"><a href="#cb4-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-82"><a href="#cb4-82" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Release date</span></span>
+<span id="cb4-83"><a href="#cb4-83" aria-hidden="true" tabindex="-1"></a>    acc_info <span class="op">=</span> data_entry.get(<span class="st">"rcsb_accession_info"</span>, {}) </span>
+<span id="cb4-84"><a href="#cb4-84" aria-hidden="true" tabindex="-1"></a>    date <span class="op">=</span> acc_info.get(<span class="st">"initial_release_date"</span>, <span class="st">"N/A"</span>)</span>
+<span id="cb4-85"><a href="#cb4-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-86"><a href="#cb4-86" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Resolution</span></span>
+<span id="cb4-87"><a href="#cb4-87" aria-hidden="true" tabindex="-1"></a>    entry_info <span class="op">=</span> data_entry.get(<span class="st">"rcsb_entry_info"</span>, {}) </span>
+<span id="cb4-88"><a href="#cb4-88" aria-hidden="true" tabindex="-1"></a>    resolution <span class="op">=</span> entry_info.get(<span class="st">"resolution_combined"</span>, []) </span>
+<span id="cb4-89"><a href="#cb4-89" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> resolution: <span class="co"># If resolution is not an empty list</span></span>
+<span id="cb4-90"><a href="#cb4-90" aria-hidden="true" tabindex="-1"></a>        resolution <span class="op">=</span> resolution[<span class="dv">0</span>] <span class="co"># To remove "[]" </span></span>
+<span id="cb4-91"><a href="#cb4-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb4-92"><a href="#cb4-92" aria-hidden="true" tabindex="-1"></a>        resolution <span class="op">=</span> <span class="st">"N/A"</span></span>
+<span id="cb4-93"><a href="#cb4-93" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-94"><a href="#cb4-94" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Number of peptide chains</span></span>
+<span id="cb4-95"><a href="#cb4-95" aria-hidden="true" tabindex="-1"></a>    num_chains <span class="op">=</span> entry_info.get(<span class="st">"polymer_entity_count_protein"</span>, <span class="st">"N/A"</span>)</span>
+<span id="cb4-96"><a href="#cb4-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-97"><a href="#cb4-97" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---- Other molecules</span></span>
+<span id="cb4-98"><a href="#cb4-98" aria-hidden="true" tabindex="-1"></a>    molecules <span class="op">=</span> entry_info.get(<span class="st">"nonpolymer_entity_count"</span>, <span class="st">"N/A"</span>)</span>
+<span id="cb4-99"><a href="#cb4-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-100"><a href="#cb4-100" aria-hidden="true" tabindex="-1"></a>    <span class="co">############ Metadata dictionary ############</span></span>
+<span id="cb4-101"><a href="#cb4-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-102"><a href="#cb4-102" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assemble the metadata dictionary</span></span>
+<span id="cb4-103"><a href="#cb4-103" aria-hidden="true" tabindex="-1"></a>    metadata <span class="op">=</span> {</span>
+<span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a>        <span class="st">"PDB ID"</span>: <span class="bu">id</span>,</span>
+<span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Protein Name"</span>: prot_name,</span>
+<span id="cb4-106"><a href="#cb4-106" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Source Organims"</span>: source_organisms,</span>
+<span id="cb4-107"><a href="#cb4-107" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Determination Method"</span>: det_method,</span>
+<span id="cb4-108"><a href="#cb4-108" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Authors"</span>: authors,</span>
+<span id="cb4-109"><a href="#cb4-109" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Release Date"</span>: date,</span>
+<span id="cb4-110"><a href="#cb4-110" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Resolution"</span>: resolution,</span>
+<span id="cb4-111"><a href="#cb4-111" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Number of Peptide Chains"</span>: num_chains,</span>
+<span id="cb4-112"><a href="#cb4-112" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Number of Other Molecules"</span>: molecules</span>
+<span id="cb4-113"><a href="#cb4-113" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-114"><a href="#cb4-114" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Pass as a list to avoid "Scalar values" index error in Pandas</span></span>
+<span id="cb4-115"><a href="#cb4-115" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.DataFrame([metadata])</span>
+<span id="cb4-116"><a href="#cb4-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-117"><a href="#cb4-117" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> filename:</span>
+<span id="cb4-118"><a href="#cb4-118" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Export the DataFrame to a CSV file</span></span>
+<span id="cb4-119"><a href="#cb4-119" aria-hidden="true" tabindex="-1"></a>        df.to_csv(<span class="ss">f"</span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.csv"</span>, index<span class="op">=</span><span class="va">False</span>) <span class="co"># index=False to prevent writing row numbers</span></span>
+<span id="cb4-120"><a href="#cb4-120" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Metadata for </span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss"> successfully saved to </span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.csv"</span>)</span>
+<span id="cb4-121"><a href="#cb4-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-122"><a href="#cb4-122" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> metadata</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+</section>
+</section>
+<section id="structural-infrormation-extraction-and-distance-matrix-calculation" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="structural-infrormation-extraction-and-distance-matrix-calculation"><span class="header-section-number">2.3</span> Structural Infrormation Extraction and Distance Matrix Calculation</h2>
+<p>To understand how a protein folds and how its redidues interact with each other, we first need to extract the spatial coordinates of the amino acids. This allows us to calculate the pairwise distances between them.</p>
+<p>PDB stablished a standardized, human-readable text format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of record, utilizing fixed-width columns. The file begins with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. This is followed by the atomic coordinates section, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword “ATOM”. Finally, there is a connectivity section that describes how these atoms are bonded to form the overall structure of the molecule.</p>
+<p>To extract the mentioned data, we have implemented the function <a href="#lst-get-structural-info" class="quarto-xref">Function&nbsp;5</a>, which make a request to the RCSB PDB API to obtain raw textual data of the PDB file. It then parses the response to extract the atomic coordinates of the C<span class="math inline">\(\alpha\)</span> atoms, which are commonly used to represent the backbone of the protein structure.</p>
+<p>The function also, translates the three-letter amino acid codes into one-letter codes using a mapping dictionary. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured dataframe that will be used for subsequent distance and contact map calculations.</p>
+<p>To understand a protein’s three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. By calculating these distances, we can identify secondary structural elements and determine the tertiary or quaternary folding patterns that are crucial for the protein’s biological function.</p>
+<p>Mathematically, since each amino acid is represented by the Cartesian coordinates <span class="math inline">\((x, y, z)\)</span> of its alpha carbon (<span class="math inline">\(C\alpha\)</span>), the distance <span class="math inline">\(d\)</span> between two residues <span class="math inline">\(i\)</span> and <span class="math inline">\(j\)</span> is calculated using the three-dimensional <em>Euclidean distance formula</em>: <span class="math display">\[d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}\]</span></p>
+<p>To compute this, we implemented the <a href="#lst-distance-matrix" class="quarto-xref">Function&nbsp;6</a>, which extracts the <span class="math inline">\((x, y, z)\)</span> coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).</p>
+<section id="code-implementation-1" class="level3" data-number="2.3.1">
+<h3 data-number="2.3.1" class="anchored" data-anchor-id="code-implementation-1"><span class="header-section-number">2.3.1</span> Code Implementation</h3>
+<div id="lst-get-structural-info" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="6">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-get-structural-info-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;5
+</figcaption>
+<div aria-describedby="lst-get-structural-info-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see get_structural_info function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" data-lst-cap="Function for getting the structural information."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_structural_info(pdb_id, flag_assembly<span class="op">=</span><span class="va">False</span>, filename<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Retrieve and parse structural information from a PDB (Protein Data Bank) file.</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Extracts backbone data by filtering for Alpha Carbon atoms, as a simplified representation of the protein structure.</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Structural information extracted: chain, residue number, amino acid, </span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">    and cartesian coordinates (x, y, z).</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Handles API errors via handle_API_error function.</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">    pdb_id : str</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Unique identifier for the PDB file.</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="co">    flag_assembly : bool, optional</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="co">        If true, enables parsing for biological assembly files to handle multimeric structures.</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="co">    filename : str, optional</span></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="co">        The output CSV file path where metadata will be saved.</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="co">    results_df : pd.DataFrame</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="co">        A DataFrame containing structural information with columns:</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a><span class="co">        - chain: Protein chain identifier</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a><span class="co">        - residue_number: Sequence number of the residue</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a><span class="co">        - amino_acid: Single-letter amino acid code</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a><span class="co">        - x, y, z: Cartesian coordinates of the alpha carbon atom</span></span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a><span class="co">        Returns None if the request fails due to timeout or HTTP error.</span></span>
+<span id="cb5-28"><a href="#cb5-28" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-29"><a href="#cb5-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> flag_assembly: <span class="co"># Define the download endpoint for the biological assembly file</span></span>
+<span id="cb5-30"><a href="#cb5-30" aria-hidden="true" tabindex="-1"></a>        url <span class="op">=</span> <span class="ss">f"https://files.rcsb.org/download/</span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss">.pdb1"</span></span>
+<span id="cb5-31"><a href="#cb5-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>: <span class="co"># Define the download endpoint for the raw PDB file</span></span>
+<span id="cb5-32"><a href="#cb5-32" aria-hidden="true" tabindex="-1"></a>        url <span class="op">=</span> <span class="ss">f"https://files.rcsb.org/download/</span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss">.pdb"</span></span>
+<span id="cb5-33"><a href="#cb5-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-34"><a href="#cb5-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Handling with Timeout and Errors </span></span>
+<span id="cb5-35"><a href="#cb5-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">try</span>:</span>
+<span id="cb5-36"><a href="#cb5-36" aria-hidden="true" tabindex="-1"></a>        response <span class="op">=</span> requests.get(url, </span>
+<span id="cb5-37"><a href="#cb5-37" aria-hidden="true" tabindex="-1"></a>                               timeout <span class="op">=</span> <span class="dv">100</span>)</span>
+<span id="cb5-38"><a href="#cb5-38" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-39"><a href="#cb5-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">except</span> requests.exceptions.Timeout: <span class="co"># Handling Timeout Error</span></span>
+<span id="cb5-40"><a href="#cb5-40" aria-hidden="true" tabindex="-1"></a>        handle_API_error(pdb_id, flag_timeout <span class="op">=</span> <span class="va">True</span>)</span>
+<span id="cb5-41"><a href="#cb5-41" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb5-42"><a href="#cb5-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-43"><a href="#cb5-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Handle HTTP status code with handle_API_error and check if the request was successful</span></span>
+<span id="cb5-44"><a href="#cb5-44" aria-hidden="true" tabindex="-1"></a>    flag <span class="op">=</span> handle_API_error(pdb_id, status_code <span class="op">=</span> response.status_code)</span>
+<span id="cb5-45"><a href="#cb5-45" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-46"><a href="#cb5-46" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">not</span> flag:  <span class="co"># Proceed only if the request was successful (flag: True)</span></span>
+<span id="cb5-47"><a href="#cb5-47" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span></span>
+<span id="cb5-48"><a href="#cb5-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-49"><a href="#cb5-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Execution continues only if a 200 OK status is received</span></span>
+<span id="cb5-50"><a href="#cb5-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-51"><a href="#cb5-51" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mapping for 3-letter to 1-letter amino acid codes</span></span>
+<span id="cb5-52"><a href="#cb5-52" aria-hidden="true" tabindex="-1"></a>    aa_map <span class="op">=</span> {</span>
+<span id="cb5-53"><a href="#cb5-53" aria-hidden="true" tabindex="-1"></a>        <span class="st">"ALA"</span>: <span class="st">"A"</span>, <span class="st">"ARG"</span>: <span class="st">"R"</span>, <span class="st">"ASN"</span>: <span class="st">"N"</span>, <span class="st">"ASP"</span>: <span class="st">"D"</span>, <span class="st">"CYS"</span>: <span class="st">"C"</span>, <span class="st">"GLN"</span>: <span class="st">"Q"</span>, <span class="st">"GLU"</span>: <span class="st">"E"</span>, </span>
+<span id="cb5-54"><a href="#cb5-54" aria-hidden="true" tabindex="-1"></a>        <span class="st">"GLY"</span>: <span class="st">"G"</span>, <span class="st">"HIS"</span>: <span class="st">"H"</span>, <span class="st">"ILE"</span>: <span class="st">"I"</span>, <span class="st">"LEU"</span>: <span class="st">"L"</span>, <span class="st">"LYS"</span>: <span class="st">"K"</span>, <span class="st">"MET"</span>: <span class="st">"M"</span>, <span class="st">"PHE"</span>: <span class="st">"F"</span>, </span>
+<span id="cb5-55"><a href="#cb5-55" aria-hidden="true" tabindex="-1"></a>        <span class="st">"PRO"</span>: <span class="st">"P"</span>, <span class="st">"SER"</span>: <span class="st">"S"</span>, <span class="st">"THR"</span>: <span class="st">"T"</span>, <span class="st">"TRP"</span>: <span class="st">"W"</span>, <span class="st">"TYR"</span>: <span class="st">"Y"</span>, <span class="st">"VAL"</span>: <span class="st">"V"</span></span>
+<span id="cb5-56"><a href="#cb5-56" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb5-57"><a href="#cb5-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-58"><a href="#cb5-58" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Access the raw text content of the PDB file</span></span>
+<span id="cb5-59"><a href="#cb5-59" aria-hidden="true" tabindex="-1"></a>    pdb_data <span class="op">=</span> response.text <span class="co"># .text because is a .pdb file</span></span>
+<span id="cb5-60"><a href="#cb5-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-61"><a href="#cb5-61" aria-hidden="true" tabindex="-1"></a>    <span class="co">############ Structural data extraction ############</span></span>
+<span id="cb5-62"><a href="#cb5-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-63"><a href="#cb5-63" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> [] <span class="co"># List to store extracted structural data</span></span>
+<span id="cb5-64"><a href="#cb5-64" aria-hidden="true" tabindex="-1"></a>    current_model <span class="op">=</span> <span class="dv">0</span> <span class="co"># If there is more than one model in the .pdb1 file</span></span>
+<span id="cb5-65"><a href="#cb5-65" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> line <span class="kw">in</span> pdb_data.split(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>): <span class="co"># Parse .pdb file line by line</span></span>
+<span id="cb5-66"><a href="#cb5-66" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb5-67"><a href="#cb5-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> flag_assembly:</span>
+<span id="cb5-68"><a href="#cb5-68" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> line.startswith(<span class="st">"MODEL"</span>): <span class="co"># Biological units are separated by "MODEL" records</span></span>
+<span id="cb5-69"><a href="#cb5-69" aria-hidden="true" tabindex="-1"></a>                <span class="cf">try</span>:</span>
+<span id="cb5-70"><a href="#cb5-70" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># Extract the model number (columns 11-14)</span></span>
+<span id="cb5-71"><a href="#cb5-71" aria-hidden="true" tabindex="-1"></a>                    current_model <span class="op">=</span> <span class="bu">int</span>(line[<span class="dv">10</span>:<span class="dv">14</span>].strip()) </span>
+<span id="cb5-72"><a href="#cb5-72" aria-hidden="true" tabindex="-1"></a>                <span class="cf">except</span>: <span class="co"># Keep previous model index if parsing fails</span></span>
+<span id="cb5-73"><a href="#cb5-73" aria-hidden="true" tabindex="-1"></a>                    <span class="cf">pass</span></span>
+<span id="cb5-74"><a href="#cb5-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-75"><a href="#cb5-75" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> line.startswith(<span class="st">"ATOM"</span>): <span class="co"># Processing only atom lines</span></span>
+<span id="cb5-76"><a href="#cb5-76" aria-hidden="true" tabindex="-1"></a>            <span class="co"># The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)</span></span>
+<span id="cb5-77"><a href="#cb5-77" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Extract atom name (columns 13-16)</span></span>
+<span id="cb5-78"><a href="#cb5-78" aria-hidden="true" tabindex="-1"></a>            atom_name <span class="op">=</span> line[<span class="dv">12</span>:<span class="dv">16</span>].strip() <span class="co"># .strip() to remove blank spaces</span></span>
+<span id="cb5-79"><a href="#cb5-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-80"><a href="#cb5-80" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Filter for Alpha Carbons (CA) to represent the protein backbone</span></span>
+<span id="cb5-81"><a href="#cb5-81" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> atom_name <span class="op">==</span> <span class="st">"CA"</span>: </span>
+<span id="cb5-82"><a href="#cb5-82" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Extract 3-letter amino acid name (columns 18-20)</span></span>
+<span id="cb5-83"><a href="#cb5-83" aria-hidden="true" tabindex="-1"></a>                aa_name <span class="op">=</span> line[<span class="dv">17</span>:<span class="dv">20</span>].strip() </span>
+<span id="cb5-84"><a href="#cb5-84" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Convert 3-letter to 1-letter using aa_map dictionary</span></span>
+<span id="cb5-85"><a href="#cb5-85" aria-hidden="true" tabindex="-1"></a>                aa_name_1 <span class="op">=</span> aa_map.get(aa_name, <span class="st">"X"</span>) <span class="co"># "X" for non-canonical residues</span></span>
+<span id="cb5-86"><a href="#cb5-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-87"><a href="#cb5-87" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Extract XYZ coordinates from their fixed positions</span></span>
+<span id="cb5-88"><a href="#cb5-88" aria-hidden="true" tabindex="-1"></a>                coord_x <span class="op">=</span> line[<span class="dv">30</span>:<span class="dv">38</span>].strip() <span class="co"># X (columns 31-38)</span></span>
+<span id="cb5-89"><a href="#cb5-89" aria-hidden="true" tabindex="-1"></a>                coord_y <span class="op">=</span> line[<span class="dv">38</span>:<span class="dv">46</span>].strip() <span class="co"># Y (columns 39-46)</span></span>
+<span id="cb5-90"><a href="#cb5-90" aria-hidden="true" tabindex="-1"></a>                coord_z <span class="op">=</span> line[<span class="dv">46</span>:<span class="dv">54</span>].strip() <span class="co"># Z (columns 47-54)</span></span>
+<span id="cb5-91"><a href="#cb5-91" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb5-92"><a href="#cb5-92" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Extract chain identifier (column 22)</span></span>
+<span id="cb5-93"><a href="#cb5-93" aria-hidden="true" tabindex="-1"></a>                chain <span class="op">=</span> line[<span class="dv">21</span>:<span class="dv">22</span>].strip()</span>
+<span id="cb5-94"><a href="#cb5-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-95"><a href="#cb5-95" aria-hidden="true" tabindex="-1"></a>                <span class="cf">if</span> current_model <span class="op">&gt;</span> <span class="dv">1</span>:</span>
+<span id="cb5-96"><a href="#cb5-96" aria-hidden="true" tabindex="-1"></a>                    <span class="co"># Create a unique ID for repeated chains in the assembly</span></span>
+<span id="cb5-97"><a href="#cb5-97" aria-hidden="true" tabindex="-1"></a>                    unique_chain <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>chain<span class="sc">}</span><span class="ss">_</span><span class="sc">{</span>current_model<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb5-98"><a href="#cb5-98" aria-hidden="true" tabindex="-1"></a>                <span class="cf">else</span>:  <span class="co"># Keep original chain ID for the first model</span></span>
+<span id="cb5-99"><a href="#cb5-99" aria-hidden="true" tabindex="-1"></a>                    unique_chain <span class="op">=</span> chain</span>
+<span id="cb5-100"><a href="#cb5-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-101"><a href="#cb5-101" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Extract residue sequence number (columns 23-26)</span></span>
+<span id="cb5-102"><a href="#cb5-102" aria-hidden="true" tabindex="-1"></a>                residue_number <span class="op">=</span> line[<span class="dv">22</span>:<span class="dv">26</span>].strip() </span>
+<span id="cb5-103"><a href="#cb5-103" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb5-104"><a href="#cb5-104" aria-hidden="true" tabindex="-1"></a>                <span class="co"># Append record to the results list</span></span>
+<span id="cb5-105"><a href="#cb5-105" aria-hidden="true" tabindex="-1"></a>                results.append({</span>
+<span id="cb5-106"><a href="#cb5-106" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"chain"</span>: unique_chain,</span>
+<span id="cb5-107"><a href="#cb5-107" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"residue_number"</span>: residue_number,</span>
+<span id="cb5-108"><a href="#cb5-108" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"amino_acid"</span>: aa_name_1,</span>
+<span id="cb5-109"><a href="#cb5-109" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"x"</span>: <span class="bu">float</span>(coord_x),</span>
+<span id="cb5-110"><a href="#cb5-110" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"y"</span>: <span class="bu">float</span>(coord_y),</span>
+<span id="cb5-111"><a href="#cb5-111" aria-hidden="true" tabindex="-1"></a>                               <span class="st">"z"</span>: <span class="bu">float</span>(coord_z)</span>
+<span id="cb5-112"><a href="#cb5-112" aria-hidden="true" tabindex="-1"></a>                            })</span>
+<span id="cb5-113"><a href="#cb5-113" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-114"><a href="#cb5-114" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Transform data into a df</span></span>
+<span id="cb5-115"><a href="#cb5-115" aria-hidden="true" tabindex="-1"></a>    results_df <span class="op">=</span> pd.DataFrame(results)</span>
+<span id="cb5-116"><a href="#cb5-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-117"><a href="#cb5-117" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> filename:</span>
+<span id="cb5-118"><a href="#cb5-118" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Export the DataFrame to a CSV file</span></span>
+<span id="cb5-119"><a href="#cb5-119" aria-hidden="true" tabindex="-1"></a>        results_df.to_csv(<span class="ss">f"</span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.csv"</span>, index<span class="op">=</span><span class="va">False</span>) <span class="co"># index=False to prevent writing row numbers</span></span>
+<span id="cb5-120"><a href="#cb5-120" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Structural data for </span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss"> successfully saved to </span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.csv"</span>)</span>
+<span id="cb5-121"><a href="#cb5-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-122"><a href="#cb5-122" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> results_df</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<div id="lst-distance-matrix" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="7">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-distance-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;6
+</figcaption>
+<div aria-describedby="lst-distance-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see distance_matrix function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" data-lst-cap="Function for calculating the distance matrix."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> distance_matrix(df_structural_info):</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">    df_structural_info : pandas.DataFrame</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">        A dataframe containing structural information with columns:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">                chain / residue_number / amino_acid / x / y / z</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">    distance_matrix : numpy.ndarray</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="co">        A square symmetric matrix of shape (n, n) where n is the number of CA atoms.</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="co">        Each element [i, j] contains the Euclidean distance between CA atoms i and j in angstroms.</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="co">        Diagonal elements are zero.</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Matrix size corresponds to the number of residues/atoms</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>    size <span class="op">=</span> <span class="bu">len</span>(df_structural_info) </span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initialize a square matrix of zeros</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    distance_matrix <span class="op">=</span> np.zeros((size, size)) </span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract xyz coordinates as a NumPy array (each row is [x, y, z])</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    coordinates <span class="op">=</span> df_structural_info[[<span class="st">"x"</span>,<span class="st">"y"</span>,<span class="st">"z"</span>]].values </span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Iterate through each pair of coordinates to calculate distances</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> row, coord1 <span class="kw">in</span> <span class="bu">enumerate</span>(coordinates): <span class="co"># Reference coordinate</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> column, coord2 <span class="kw">in</span> <span class="bu">enumerate</span>(coordinates): <span class="co"># Comparison coordinate</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Calculate the difference in each dimension</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>            dx <span class="op">=</span> coord2[<span class="dv">0</span>] <span class="op">-</span> coord1[<span class="dv">0</span>]</span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>            dy <span class="op">=</span> coord2[<span class="dv">1</span>] <span class="op">-</span> coord1[<span class="dv">1</span>]</span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>            dz <span class="op">=</span> coord2[<span class="dv">2</span>] <span class="op">-</span> coord1[<span class="dv">2</span>]</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Apply the 3D distance formula: sqrt(dx^2 + dy^2 + dz^2)</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>            distance <span class="op">=</span> math.sqrt(math.<span class="bu">pow</span>(dx, <span class="dv">2</span>) <span class="op">+</span> math.<span class="bu">pow</span>(dy, <span class="dv">2</span>) <span class="op">+</span> math.<span class="bu">pow</span>(dz, <span class="dv">2</span>))</span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Store the result in the corresponding matrix cell</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>            distance_matrix[row,column] <span class="op">=</span> distance </span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> distance_matrix</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+</section>
+</section>
+<section id="contact-map-calculation" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="contact-map-calculation"><span class="header-section-number">2.4</span> Contact Map Calculation</h2>
+<p>In proteins, there can be both intrachain and interchain contacts, taking that into account, <a href="#lst-contact-matrix" class="quarto-xref">Function&nbsp;7</a> function was implemented to generate the corresponding matrices from the pairwise Cα distance matrix and residue chain information.</p>
+<p>Contacts were defined using a specific distance threshold, set by default between 6 Å and 12 Å. Distances below 6 Å are excluded to avoid trivial sequential contacts (immediate neighbors along the backbone), while distance above 12 Å are generally too far for meaningful non-covalent interactions. This range captures the most relevant spatial interactions associated with protein folding and function.</p>
+<p>To visualize the computed contact matrices of each protein <a href="#lst-contact-map" class="quarto-xref">Function&nbsp;8</a> function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively, which makes it easier the identification of oligomers.</p>
+<p>A key feature of this function is its ability to isolate and analyze contact maps for specific protein chains using the ‘chains’ argument, which significantly streamlines the visualization of complex structures.</p>
+<section id="code-implementation-2" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="code-implementation-2"><span class="header-section-number">2.4.1</span> Code Implementation</h3>
+<div id="lst-contact-matrix" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="8">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-contact-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;7
+</figcaption>
+<div aria-describedby="lst-contact-matrix-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see contact_matrix function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" data-lst-cap="Function for calculating the contact matrices."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> contact_matrix(structural_info, distance_matrix, min_distance<span class="op">=</span><span class="dv">6</span>, max_distance<span class="op">=</span><span class="dv">12</span>):</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Generate intrachain and interchain contact matrices based on distance thresholds.</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="co">    structural_info : pd.DataFrame</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="co">        DataFrame containing structural information with at least a "chain" column.</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="co">    distance_matrix : np.ndarray</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co">        Matrix of pairwise distances between residues.</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">    min_distance : int</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Minimum distance threshold in Angstroms (default: 6).</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">    max_distance : int</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="co">        Maximum distance threshold in Angstroms (default: 12).</span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="co">    tuple </span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a><span class="co">        matrix_intra : np.ndarray</span></span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a><span class="co">            2D contact matrix containing distances for intrachain contacts.</span></span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a><span class="co">            Non-contact positions are NaN.</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a><span class="co">        matrix_inter : np.ndarray</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a><span class="co">            2D contact matrix containing distances for interchain contacts.</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a><span class="co">            Non-contact positions are NaN.</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract chain identifiers for each residue as a NumPy array</span></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    chain_per_res <span class="op">=</span> structural_info[<span class="st">"chain"</span>].values</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Initialize contact matrices with NaNs (to prevent plotting non-relevant points)</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>    matrix_intra <span class="op">=</span> np.full_like(distance_matrix, np.nan) <span class="co"># intrachain contacts</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>    matrix_inter <span class="op">=</span> np.full_like(distance_matrix, np.nan)<span class="co"># interchain contacts</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Define significant folding distances:</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Default threshold [6, 12] avoids:</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># &gt;6: immediate neighbors (useless for folding info)</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>    <span class="co"># &lt;12: atoms that are too far apart  </span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    distance_bool_matrix <span class="op">=</span> (distance_matrix <span class="op">&gt;=</span> min_distance) <span class="op">&amp;</span> (distance_matrix <span class="op">&lt;=</span> max_distance)</span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Boolean matrix where [i, j] is True if residue i and j belong to the same chain</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    same_chain_bool_matrix <span class="op">=</span> np.equal.outer(chain_per_res, chain_per_res) </span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Intrachain contacts matrix. Must meet:</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>    <span class="co"># distance criteria (distance_bool_matrix)</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>    <span class="co"># AND both residues must belong to the same chain (same_chain_bool_matrix)</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>    matrix_intra[distance_bool_matrix <span class="op">&amp;</span> same_chain_bool_matrix] <span class="op">=</span> distance_matrix[distance_bool_matrix <span class="op">&amp;</span> same_chain_bool_matrix]</span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Interchain contacts matrix. Must meet:</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>    <span class="co"># distance criteria (distance_bool_matrix)</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># AND both residues must belong to the different chains (~same_chain_bool_matrix)</span></span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>    matrix_inter[distance_bool_matrix <span class="op">&amp;</span> <span class="op">~</span>same_chain_bool_matrix] <span class="op">=</span> distance_matrix[distance_bool_matrix <span class="op">&amp;</span> <span class="op">~</span>same_chain_bool_matrix] </span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> matrix_intra, matrix_inter</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<div id="lst-contact-map" class="cell listing quarto-float quarto-figure quarto-figure-left anchored" data-execution_count="9">
+<figure class="quarto-float quarto-float-lst figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-lst quarto-uncaptioned" id="lst-contact-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Function&nbsp;8
+</figcaption>
+<div aria-describedby="lst-contact-map-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<details class="code-fold">
+<summary>Click to see plot_contact_map function.</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" data-lst-cap="Function for plotting the contact map."><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, chains<span class="op">=</span><span class="va">None</span>, pdb_id<span class="op">=</span><span class="st">"-"</span>, filename<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Plot a contact map (intra-chain and inter-chain) visualization for protein structure analysis.</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">    ----------</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">    structural_info : pds.DataFrame</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">        DataFrame containing structural information with at least a "chain" column</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">        indicating the chain identifier for each residue.</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">    intrachain_matrix : np.ndarray</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">        2D contact matrix representing contacts within chains. </span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">        Non-contact regions should be NaN to avoid overwriting inter-chain data.</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="co">    interchain_matrix : np.ndarray</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="co">        2D contact matrix representing contacts between different chains. </span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="co">        Non-contact regions should be NaN.</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="co">    chains : list of str, optional</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="co">        List of chain identifiers to include in the plot. </span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="co">        If None (default), all chains in structural_info are used.</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="co">    pdb_id : str, optional</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="co">        PDB identifier for display in the plot title. </span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="co">        Default is "-".</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a><span class="co">    filename : str, optional</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="co">        If provided, the plot will be saved as a PNG file with this filename</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="co">        (without extension). </span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="co">        If None (default), the plot is not saved to file.</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="co">    -------</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="co">    None</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="co">        Displays the plot and optionally saves it to file. </span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> chains:</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Check if all requested chains are present in the structural information</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>        available_chains <span class="op">=</span> structural_info[<span class="st">"chain"</span>].unique()</span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> chain <span class="kw">in</span> chains:</span>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> chain <span class="kw">not</span> <span class="kw">in</span> available_chains:</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a>                <span class="bu">print</span>(<span class="ss">f"One or more requested chains are not present."</span>)</span>
+<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>                <span class="cf">return</span></span>
+<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>            </span>
+<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Filter the structural info and get the indices of the rows we keep</span></span>
+<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># This is crucial to also slice the matrices correctly later if they don't match</span></span>
+<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a>        chains_requested_bool_matrix <span class="op">=</span> structural_info[<span class="st">"chain"</span>].isin(chains)</span>
+<span id="cb8-43"><a href="#cb8-43" aria-hidden="true" tabindex="-1"></a>        structural_info <span class="op">=</span> structural_info[chains_requested_bool_matrix]</span>
+<span id="cb8-44"><a href="#cb8-44" aria-hidden="true" tabindex="-1"></a>                </span>
+<span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>        indices <span class="op">=</span> np.where(chains_requested_bool_matrix)[<span class="dv">0</span>]</span>
+<span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>        intrachain_matrix <span class="op">=</span> intrachain_matrix[np.ix_(indices, indices)]</span>
+<span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a>        interchain_matrix <span class="op">=</span> interchain_matrix[np.ix_(indices, indices)]</span>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract chain identifiers for each residue as a NumPy array</span></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    chain_per_res <span class="op">=</span> structural_info[<span class="st">"chain"</span>].values</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot Intra-chain contacts in Green       </span></span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    plt.imshow(intrachain_matrix, </span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>              cmap<span class="op">=</span><span class="st">"Greens_r"</span>, <span class="co"># Sets the color palette to Reversed Greens</span></span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>              interpolation<span class="op">=</span><span class="st">"none"</span>, <span class="co"># Prevents blurring; each pixel represents exactly one residue</span></span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>              origin<span class="op">=</span><span class="st">"lower"</span>, <span class="co"># Places the (0,0) index at the bottom-left corner</span></span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>              aspect<span class="op">=</span><span class="st">"equal"</span>) </span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Plot Inter-chain contacts in Green</span></span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Since contact matrices contain NaNs, the second plot won't overwrite the first</span></span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>    plt.imshow(interchain_matrix, </span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>              cmap<span class="op">=</span><span class="st">"Reds_r"</span>, </span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>              interpolation<span class="op">=</span><span class="st">"none"</span>, </span>
+<span id="cb8-64"><a href="#cb8-64" aria-hidden="true" tabindex="-1"></a>              origin<span class="op">=</span><span class="st">"lower"</span>,</span>
+<span id="cb8-65"><a href="#cb8-65" aria-hidden="true" tabindex="-1"></a>              aspect<span class="op">=</span><span class="st">"equal"</span></span>
+<span id="cb8-66"><a href="#cb8-66" aria-hidden="true" tabindex="-1"></a>              )</span>
+<span id="cb8-67"><a href="#cb8-67" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-68"><a href="#cb8-68" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Manually creating patches for the legend</span></span>
+<span id="cb8-69"><a href="#cb8-69" aria-hidden="true" tabindex="-1"></a>    green_patch <span class="op">=</span> mpatches.Patch(color<span class="op">=</span><span class="st">"green"</span>, </span>
+<span id="cb8-70"><a href="#cb8-70" aria-hidden="true" tabindex="-1"></a>                                label<span class="op">=</span><span class="st">"Intra-chain contact"</span>) </span>
+<span id="cb8-71"><a href="#cb8-71" aria-hidden="true" tabindex="-1"></a>    red_patch <span class="op">=</span> mpatches.Patch(color<span class="op">=</span><span class="st">"red"</span>, </span>
+<span id="cb8-72"><a href="#cb8-72" aria-hidden="true" tabindex="-1"></a>                              label<span class="op">=</span><span class="st">"Inter-chain contact"</span>)</span>
+<span id="cb8-73"><a href="#cb8-73" aria-hidden="true" tabindex="-1"></a>    patches <span class="op">=</span> [green_patch, red_patch]</span>
+<span id="cb8-74"><a href="#cb8-74" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-75"><a href="#cb8-75" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Adding legend</span></span>
+<span id="cb8-76"><a href="#cb8-76" aria-hidden="true" tabindex="-1"></a>    plt.legend(handles<span class="op">=</span>patches, <span class="co"># Text of the legend</span></span>
+<span id="cb8-77"><a href="#cb8-77" aria-hidden="true" tabindex="-1"></a>              loc<span class="op">=</span><span class="st">"upper right"</span>, <span class="co"># Place of the legend</span></span>
+<span id="cb8-78"><a href="#cb8-78" aria-hidden="true" tabindex="-1"></a>              bbox_to_anchor<span class="op">=</span>(<span class="fl">1.5</span>, <span class="fl">1.2</span>)) <span class="co"># bbox_to_anchor places legend outside the plot area</span></span>
+<span id="cb8-79"><a href="#cb8-79" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="cb8-80"><a href="#cb8-80" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Title and labels</span></span>
+<span id="cb8-81"><a href="#cb8-81" aria-hidden="true" tabindex="-1"></a>    plt.title(<span class="ss">f"CONTACT MAP (Protein: </span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss">)"</span>, fontsize<span class="op">=</span><span class="dv">14</span>)</span>
+<span id="cb8-82"><a href="#cb8-82" aria-hidden="true" tabindex="-1"></a>    plt.xlabel(<span class="st">"Residue Index"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb8-83"><a href="#cb8-83" aria-hidden="true" tabindex="-1"></a>    plt.ylabel(<span class="st">"Residue Index"</span>, fontsize<span class="op">=</span><span class="dv">12</span>)</span>
+<span id="cb8-84"><a href="#cb8-84" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-85"><a href="#cb8-85" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Identify indices where the chain ID changes by comparing current to next element</span></span>
+<span id="cb8-86"><a href="#cb8-86" aria-hidden="true" tabindex="-1"></a>    idx_changes <span class="op">=</span> np.where(chain_per_res[:<span class="op">-</span><span class="dv">1</span>] <span class="op">!=</span> chain_per_res[<span class="dv">1</span>:])[<span class="dv">0</span>] </span>
+<span id="cb8-87"><a href="#cb8-87" aria-hidden="true" tabindex="-1"></a>    <span class="co"># List of the start and end points for every chain</span></span>
+<span id="cb8-88"><a href="#cb8-88" aria-hidden="true" tabindex="-1"></a>    boundaries <span class="op">=</span> [<span class="dv">0</span>] <span class="op">+</span> <span class="bu">list</span>(idx_changes <span class="op">+</span> <span class="fl">0.5</span>) <span class="op">+</span> [<span class="bu">len</span>(chain_per_res)]</span>
+<span id="cb8-89"><a href="#cb8-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-90"><a href="#cb8-90" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Unique chain names in order of appearance</span></span>
+<span id="cb8-91"><a href="#cb8-91" aria-hidden="true" tabindex="-1"></a>    unique_chains <span class="op">=</span> []</span>
+<span id="cb8-92"><a href="#cb8-92" aria-hidden="true" tabindex="-1"></a>    unique_chains_label <span class="op">=</span> []</span>
+<span id="cb8-93"><a href="#cb8-93" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> each_chain <span class="kw">in</span> chain_per_res:</span>
+<span id="cb8-94"><a href="#cb8-94" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> each_chain <span class="kw">not</span> <span class="kw">in</span> unique_chains: </span>
+<span id="cb8-95"><a href="#cb8-95" aria-hidden="true" tabindex="-1"></a>            unique_chains.append(each_chain)</span>
+<span id="cb8-96"><a href="#cb8-96" aria-hidden="true" tabindex="-1"></a>            unique_chains_label.append(<span class="ss">f"Chain </span><span class="sc">{</span>each_chain<span class="sc">}</span><span class="ss">"</span>) <span class="co"># Create labels to plot them</span></span>
+<span id="cb8-97"><a href="#cb8-97" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-98"><a href="#cb8-98" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Draw lines to visually separate the different chains in the matrix</span></span>
+<span id="cb8-99"><a href="#cb8-99" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> idx <span class="kw">in</span> idx_changes:</span>
+<span id="cb8-100"><a href="#cb8-100" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Add 0.5 to place the line exactly between the pixels of two residues</span></span>
+<span id="cb8-101"><a href="#cb8-101" aria-hidden="true" tabindex="-1"></a>        plt.axhline(y<span class="op">=</span>idx <span class="op">+</span> <span class="fl">0.5</span>, color<span class="op">=</span><span class="st">"black"</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb8-102"><a href="#cb8-102" aria-hidden="true" tabindex="-1"></a>        plt.axvline(x<span class="op">=</span>idx <span class="op">+</span> <span class="fl">0.5</span>, color<span class="op">=</span><span class="st">'black'</span>, linestyle<span class="op">=</span><span class="st">"--"</span>)</span>
+<span id="cb8-103"><a href="#cb8-103" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-104"><a href="#cb8-104" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Place the labels of the chain names at the midpoint of each boundary</span></span>
+<span id="cb8-105"><a href="#cb8-105" aria-hidden="true" tabindex="-1"></a>    ticks <span class="op">=</span> []</span>
+<span id="cb8-106"><a href="#cb8-106" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="bu">len</span>(boundaries) <span class="op">-</span> <span class="dv">1</span>):</span>
+<span id="cb8-107"><a href="#cb8-107" aria-hidden="true" tabindex="-1"></a>        midpoint <span class="op">=</span> (boundaries[i] <span class="op">+</span> boundaries[i<span class="op">+</span><span class="dv">1</span>]) <span class="op">/</span> <span class="dv">2</span> <span class="co"># Calculate the midpoint of each chain segment</span></span>
+<span id="cb8-108"><a href="#cb8-108" aria-hidden="true" tabindex="-1"></a>        ticks.append(midpoint) <span class="co"># Appends ticks</span></span>
+<span id="cb8-109"><a href="#cb8-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-110"><a href="#cb8-110" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Set up secondary axes to display chain labels</span></span>
+<span id="cb8-111"><a href="#cb8-111" aria-hidden="true" tabindex="-1"></a>    axes <span class="op">=</span> plt.gca() <span class="co"># Grabs the active plot area</span></span>
+<span id="cb8-112"><a href="#cb8-112" aria-hidden="true" tabindex="-1"></a>    sec_xaxis<span class="op">=</span> axes.secondary_xaxis(<span class="st">"top"</span>) <span class="co"># Attaches a new axis to the top of that area</span></span>
+<span id="cb8-113"><a href="#cb8-113" aria-hidden="true" tabindex="-1"></a>    sec_yaxis <span class="op">=</span> axes.secondary_yaxis(<span class="st">"right"</span>) <span class="co"># Attaches a new axis to the right of that area</span></span>
+<span id="cb8-114"><a href="#cb8-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-115"><a href="#cb8-115" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assign chain names to the secondary ticks</span></span>
+<span id="cb8-116"><a href="#cb8-116" aria-hidden="true" tabindex="-1"></a>    sec_xaxis.set_xticks(ticks)</span>
+<span id="cb8-117"><a href="#cb8-117" aria-hidden="true" tabindex="-1"></a>    sec_xaxis.set_xticklabels(unique_chains_label, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb8-118"><a href="#cb8-118" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb8-119"><a href="#cb8-119" aria-hidden="true" tabindex="-1"></a>    sec_yaxis.set_yticks(ticks)</span>
+<span id="cb8-120"><a href="#cb8-120" aria-hidden="true" tabindex="-1"></a>    sec_yaxis.set_yticklabels(unique_chains_label, fontsize<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb8-121"><a href="#cb8-121" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-122"><a href="#cb8-122" aria-hidden="true" tabindex="-1"></a>    plt.tight_layout() <span class="co"># Ensures labels/legend don't get cut off</span></span>
+<span id="cb8-123"><a href="#cb8-123" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-124"><a href="#cb8-124" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> filename: <span class="co"># Check if a filename was provided to save the image</span></span>
+<span id="cb8-125"><a href="#cb8-125" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Save the figure as a PNG file</span></span>
+<span id="cb8-126"><a href="#cb8-126" aria-hidden="true" tabindex="-1"></a>        plt.savefig(<span class="ss">f"</span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.png"</span>, </span>
+<span id="cb8-127"><a href="#cb8-127" aria-hidden="true" tabindex="-1"></a>                    dpi<span class="op">=</span><span class="dv">300</span>, <span class="co"># dpi=300 ensures high resolution</span></span>
+<span id="cb8-128"><a href="#cb8-128" aria-hidden="true" tabindex="-1"></a>                    bbox_inches<span class="op">=</span><span class="st">"tight"</span>) <span class="co"># bbox_inches="tight" prevents labels from being cut off</span></span>
+<span id="cb8-129"><a href="#cb8-129" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Contact plot for </span><span class="sc">{</span>pdb_id<span class="sc">}</span><span class="ss"> successfully saved to </span><span class="sc">{</span>filename<span class="sc">}</span><span class="ss">.png"</span>)</span>
+<span id="cb8-130"><a href="#cb8-130" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-131"><a href="#cb8-131" aria-hidden="true" tabindex="-1"></a>    plt.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</figure>
+</div>
+<hr>
+</section>
+</section>
+</section>
+<section id="results" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Results</h1>
+<section id="structural-metadata-and-parsing" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="structural-metadata-and-parsing"><span class="header-section-number">3.1</span> Structural Metadata and Parsing</h2>
+<p>The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of <span class="math inline">\(C\alpha\)</span> coordinates, chain identifiers, and residue numbering. This approach allowed for the robust handling of non-canonical amino acids and multi-chain complexes.Furthermore, a comprehensive metadata information file was generated for each entry, storing key parameters such as the PDB ID, protein name, source organism, and determination method. This file also includes administrative and structural details, specifically the authors, release dates, resolution, number of peptide chains, and the count of other molecular entities (such as ligands or water molecules).</p>
+<div id="printing_metadata_info" class="cell" data-execution_count="10">
+<div class="cell-output cell-output-stdout">
+<pre><code>METADATA INFORMATION ABOUT PDB ID: 1RBP 
+
+
+{'PDB ID': '1RBP', 'Protein Name': 'PLASMA RETINOL-BINDING PROTEIN PRECURSOR', 'Source Organims': 'Homo sapiens', 'Determination Method': 'X-RAY DIFFRACTION', 'Authors': 'N/A', 'Release Date': '1991-07-15T00:00:00+0000', 'Resolution': 2.0, 'Number of Peptide Chains': 1, 'Number of Other Molecules': 1}
+
+
+
+
+METADATA INFORMATION ABOUT PDB ID: 1QRE 
+
+
+{'PDB ID': '1QRE', 'Protein Name': 'CARBONIC ANHYDRASE', 'Source Organims': 'Methanosarcina thermophila', 'Determination Method': 'X-RAY DIFFRACTION', 'Authors': 'N/A', 'Release Date': '1999-06-25T00:00:00+0000', 'Resolution': 1.46, 'Number of Peptide Chains': 1, 'Number of Other Molecules': 2}
+
+
+
+
+METADATA INFORMATION ABOUT PDB ID: 1DGF 
+
+
+{'PDB ID': '1DGF', 'Protein Name': 'CATALASE', 'Source Organims': 'Homo sapiens', 'Determination Method': 'X-RAY DIFFRACTION', 'Authors': 'N/A', 'Release Date': '2000-02-11T00:00:00+0000', 'Resolution': 1.5, 'Number of Peptide Chains': 1, 'Number of Other Molecules': 3}
+
+
+
+</code></pre>
+</div>
+</div>
+</section>
+<section id="distance-matrix" class="level2" data-number="3.2">
+<h2 data-number="3.2" class="anchored" data-anchor-id="distance-matrix"><span class="header-section-number">3.2</span> Distance Matrix</h2>
+<p>Structural information allows to calculate the distance matrix. As mentioned before, the distance matrix contains the distance between carbon-alpha (<span class="math inline">\(C\alpha\)</span>) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates <span class="math inline">\((x, y, z)\)</span> of the atoms.</p>
+<p>On the diagonal, the values are equal to 0 because the amino acids being compared are the same. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.</p>
+<p>In multimeric proteins, this matrix also reveals the quaternary interface. By observing the distances between residues belonging to different chain identifiers, we can pinpoint the specific regions where subunits pack together. This matrix serves as the mathematical foundation for the binary contact maps, as it allows us to apply specific distance thresholds to filter out significant biological interactions.</p>
+<div id="printing_distance_matrix" class="cell" data-execution_count="11">
+<div class="cell-output cell-output-stdout">
+<pre><code>DISTANCE MATRIX ABOUT PDB ID: 1RBP
+
+
+[[ 0.          3.87357651  7.27965789 ... 41.99906586 42.37337034
+  42.52557726]
+ [ 3.87357651  0.          3.75218496 ... 40.09082227 40.43261051
+  40.2892303 ]
+ [ 7.27965789  3.75218496  0.         ... 39.03385548 39.13564004
+  38.74833759]
+ ...
+ [41.99906586 40.09082227 39.03385548 ...  0.          3.87308675
+   5.44116477]
+ [42.37337034 40.43261051 39.13564004 ...  3.87308675  0.
+   3.75772524]
+ [42.52557726 40.2892303  38.74833759 ...  5.44116477  3.75772524
+   0.        ]]
+
+
+
+
+DISTANCE MATRIX ABOUT PDB ID: 1QRE
+
+
+[[ 0.          3.77979761  6.45540967 ... 31.02966249 27.73580143
+  25.64902359]
+ [ 3.77979761  0.          3.78056795 ... 27.36908157 24.06437701
+  22.05324069]
+ [ 6.45540967  3.78056795  0.         ... 26.1276302  23.08752843
+  20.83818843]
+ ...
+ [31.02966249 27.36908157 26.1276302  ...  0.          3.84128169
+   5.64232762]
+ [27.73580143 24.06437701 23.08752843 ...  3.84128169  0.
+   3.81139581]
+ [25.64902359 22.05324069 20.83818843 ...  5.64232762  3.81139581
+   0.        ]]
+
+
+
+
+DISTANCE MATRIX ABOUT PDB ID: 1DGF
+
+
+[[ 0.          3.82053622  6.65855908 ... 85.89622553 82.44737559
+  81.3482365 ]
+ [ 3.82053622  0.          3.85797693 ... 83.26582514 79.8711479
+  78.747135  ]
+ [ 6.65855908  3.85797693  0.         ... 79.77843464 76.38287049
+  75.19589235]
+ ...
+ [85.89622553 83.26582514 79.77843464 ...  0.          3.81358978
+   5.57328754]
+ [82.44737559 79.8711479  76.38287049 ...  3.81358978  0.
+   3.81722268]
+ [81.3482365  78.747135   75.19589235 ...  5.57328754  3.81722268
+   0.        ]]
+
+
+
+</code></pre>
+</div>
+</div>
+<p>To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained. The values out of range are represented as <span class="math inline">\(NaN\)</span>.</p>
+<p>Through the plot_contact_map function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein’s tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.</p>
+<p>This dual-matrix approach allows for a clear visual and numerical distinction between the folding of individual subunits and the stabilization of the overall protein complex.</p>
+<div id="print_intra_inter_contact_matrices" class="cell" data-execution_count="12">
+<div class="cell-output cell-output-stdout">
+<pre><code>PDB ID: 1RBP
+Number of chains: 1
+INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: 1RBP
+
+
+[[       nan        nan 7.27965789 ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [7.27965789        nan        nan ...        nan        nan        nan]
+ ...
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]]
+
+
+
+INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: 1RBP
+
+
+[[nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ ...
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]]
+
+
+
+
+PDB ID: 1QRE
+Number of chains: 1
+INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: 1QRE
+
+
+[[       nan        nan 6.45540967 ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [6.45540967        nan        nan ...        nan        nan        nan]
+ ...
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]]
+
+
+
+INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: 1QRE
+
+
+[[nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ ...
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]]
+
+
+
+
+PDB ID: 1DGF
+Number of chains: 4
+INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: 1DGF
+
+
+[[       nan        nan 6.65855908 ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [6.65855908        nan        nan ...        nan        nan        nan]
+ ...
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]
+ [       nan        nan        nan ...        nan        nan        nan]]
+
+
+
+INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: 1DGF
+
+
+[[nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ ...
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]
+ [nan nan nan ... nan nan nan]]
+
+
+
+</code></pre>
+</div>
+</div>
+</section>
+<section id="contact-map-analysis" class="level2" data-number="3.3">
+<h2 data-number="3.3" class="anchored" data-anchor-id="contact-map-analysis"><span class="header-section-number">3.3</span> Contact Map Analysis</h2>
+<p>The generated contact maps provide a spatial representation of the protein’s fold and quaternary structure using a distance threshold of 6–12 Å. The visualization distinguishes between two fundamental types of interactions:</p>
+<ul>
+<li><p>Intra-chain contacts: These represent the internal folding of individual polypeptide chains in green. The clusters observed along the diagonal correspond to secondary structure elements (such as <span class="math inline">\(\alpha\)</span>-helices) and tertiary packing within the subunit.</p></li>
+<li><p>Inter-chain contacts: These highlight the interfaces between different subunits. The presence of red clusters indicates the quaternary organization of the protein, marking specific interaction surfaces that stabilize the complex.</p></li>
+</ul>
+<section id="quaternary-structure-interpretation" class="level3" data-number="3.3.1">
+<h3 data-number="3.3.1" class="anchored" data-anchor-id="quaternary-structure-interpretation"><span class="header-section-number">3.3.1</span> Quaternary Structure Interpretation</h3>
+<p>Based on the distribution of contacts and the chain boundary indicators (dashed lines), different structural features were identified. On the one hand, monomeric structures which are characterized by the exclusive presence of green contacts within a single quadrant. On the other hand, multimeric assemblies (homo- or hetero-dimers, tetramers, etc.) which are identified by the appearance of red contact patterns between distinct chain segments.</p>
+<p>The implementation of <code>np.equal.outer</code> and <code>plt.imshow</code> with <span class="math inline">\(NaN\)</span> masking allowed for the clear overlay of these two interaction types, facilitating the identification of protein interfaces and overall topology.</p>
+<div id="fig-contact-maps" class="quarto-layout-panel">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-contact-maps-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="quarto-layout-row">
+<div class="cell-output cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-contact-maps" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-contact-maps-1" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-contact-maps-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="Excercise1_files/figure-html/fig-contact-maps-output-1.png" class="quarto-figure quarto-figure-center figure-img" data-ref-parent="fig-contact-maps" width="580" height="465">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-contact-maps-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(a) Contact map for the protein 1RBP
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row">
+<div class="cell-output cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-contact-maps" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-contact-maps-2" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-contact-maps-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="Excercise1_files/figure-html/fig-contact-maps-output-2.png" class="quarto-figure quarto-figure-center figure-img" data-ref-parent="fig-contact-maps" width="580" height="465">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-contact-maps-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(b) Contact map for the protein 1QRE
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+<div class="quarto-layout-row">
+<div class="cell-output cell-output-display quarto-layout-cell-subref quarto-layout-cell" data-ref-parent="fig-contact-maps" style="flex-basis: 100.0%;justify-content: flex-start;">
+<div id="fig-contact-maps-3" class="quarto-float quarto-figure quarto-figure-center anchored" data-fig-align="center">
+<figure class="quarto-float quarto-subfloat-fig figure">
+<div aria-describedby="fig-contact-maps-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<img src="Excercise1_files/figure-html/fig-contact-maps-output-3.png" class="quarto-figure quarto-figure-center figure-img" data-ref-parent="fig-contact-maps" width="588" height="465">
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-subfloat-caption quarto-subfloat-fig" id="fig-contact-maps-3-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+(c) Contact map for the protein 1DGF
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-contact-maps-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: Contact maps for the analyzed proteins (1RBP, 1QRE, 1DGF).
+</figcaption>
+</figure>
+</div>
+<p>The 1RBP protein contact map (<a href="#fig-contact-maps-1" class="quarto-xref">Figure&nbsp;1 (a)</a>) shows discrete segments oriented perpendicularly to the main diagonal. These patterns are the classic “signature” of antiparallel <span class="math inline">\(\beta\)</span>-sheets, which in this case constitute the eight-stranded <span class="math inline">\(\beta\)</span>-barrel that forms the protein’s central cavity. The regular spacing between the off-diagonal clusters indicates the highly organized hydrogen-bonding network between adjacent <span class="math inline">\(\beta\)</span>-strands. The contacts between the first and the last strands are also visible as distal signals. This represents the closed barrel structure. Furthermore, in the C-terminal region, the main diagonal exhibits a distinct thickening, which represents the presence of an <span class="math inline">\(\alpha\)</span>-helical segment in this specific area.</p>
+<p>The 1QRE contact map (<a href="#fig-contact-maps-2" class="quarto-xref">Figure&nbsp;1 (b)</a>) exhibits prominent clusters of contacts running parallel to the main diagonal. These patterns represent parallel <span class="math inline">\(\beta\)</span>-sheets, which characterize the central core of the protein’s fold. A significant thickening is observed along the entire main diagonal. This indicates a high density of <span class="math inline">\((i, i+4)\)</span> local interactions, representing the presence of multiple <span class="math inline">\(\alpha\)</span>-helices packed against the central sheets. The plot displays three clearly defined blocks of contacts, within which several segments run parallel to the main diagonal; these patterns indicate the structural packing and close-range interactions between the <span class="math inline">\(\alpha\)</span>-helices and <span class="math inline">\(\beta\)</span>-sheets</p>
+<p>Finally, if inter-chain distances are included, discrete contact zones appear between the three different chain identifiers. This represents the quaternary structure, specifically the trimeric interfaces where the three subunits interact and assemble to form the functional protein complex.</p>
+<p>The 1DGF contact map (<a href="#fig-contact-maps-3" class="quarto-xref">Figure&nbsp;1 (c)</a>) reveals prominent segments oriented both parallel and perpendicular to the main diagonal. This dual pattern represents a complex <span class="math inline">\(\alpha/\beta\)</span> architecture, where the parallel lines indicate parallel <span class="math inline">\(\beta\)</span>-sheets and the perpendicular segments confirm the presence of antiparallel <span class="math inline">\(\beta\)</span>-strands within the same fold. A dense thickening is observed along the entire main diagonal, indicating the presence of multiple <span class="math inline">\(\alpha\)</span>-helices, which are characterized by a high frequency of <span class="math inline">\((i, i+4)\)</span> local interactions.</p>
+<p>This pattern is consistently manifested across the diagonal quadrants of the contact matrix; since this pattern repeats four times with high regularity, it suggests that the protein is composed of four identical subunits with the same structural composition. The contacts displayed in the off-diagonal quadrants (indicated in red) represent the interactions between the different polypeptide chains—consistently with the metadata identifying a tetrameric structure—exhibiting a symmetric distribution along the main diagonal. Mapping the chains from bottom-to-top and left-to-right as A, B, C, and D allows for a direct comparison of inter-chain interactions. The analysis reveals that the highest density of contacts occurs between pairs A-B, A-C, B-D, and D-C, whereas a significantly lower number of contacts is observed in the quadrants corresponding to the A-D and B-C interfaces.</p>
+<hr>
+</section>
+</section>
+</section>
+<section id="discussion" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Discussion</h1>
+<p>This project has successfully implemented a computational approach to analyze protein architecture through the generation and interpretation of distance and contact matrices. By processing structural data from the PDB, we have achieved an efficient generation of contact maps, providing a clear visual representation of the complex three-dimensional folding of the studied proteins.</p>
+<p>In particular, the developed pipeline was applied to characterize the intramolecular and intermolecular interaction patterns of proteins 1RBP, 1QRE, and 1DGF, effectively mapping their tertiary and quaternary organizations.</p>
+<section id="rbp" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="rbp"><span class="header-section-number">4.1</span> <code>1RBP</code></h2>
+<p>The analysis of 1RBP (Retinol-Binding Protein) confirms its characteristic <span class="math inline">\(\beta\)</span>-barrel tertiary structure. When compared to the reference data in the Protein Data Bank (PDB), where the structure was determined via X-ray diffraction at a high resolution of 2.0 Å, the generated contact map (<a href="#fig-contact-maps-1" class="quarto-xref">Figure&nbsp;1 (a)</a>) precisely aligns with the experimentally observed conformation. The contact matrix highlights the <span class="math inline">\(\beta\)</span>-barrel core where predominant anti-diagonal signals correspond to the eight antiparallel <span class="math inline">\(\beta\)</span>-strands that wrap into a closed barrel, a hallmark of the lipocalin family. In addition to the barrel, the map identifies a specific <span class="math inline">\(\alpha\)</span>-helical zone located near the C-terminus. This is visible in the contact map as a localized area of increased density along the main diagonal, representing the short-range <span class="math inline">\((i, i+4)\)</span> interactions characteristic of helical turns.</p>
+    <div id="app-1RBP" class="molstar-app"></div>
+    <script type="text/javascript">
+    molstar.Viewer.create("app-1RBP", {"emdbProvider":"rcsb","layoutIsExpanded":false,"layoutShowControls":false,"layoutShowLeftPanel":true,"layoutShowLog":false,"layoutShowRemoteState":false,"layoutShowSequence":false,"pdbProvider":"rcsb","viewportShowAnimation":false,"viewportShowExpand":true,"viewportShowSelectionMode":false}).then(viewer => {
+    viewer.loadPdb("1RBP");    });
+    </script>
+    
+</section>
+<section id="qre" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="qre"><span class="header-section-number">4.2</span> <code>1QRE</code></h2>
+<p>The second one, the 1QRE contact map (<a href="#fig-contact-maps-2" class="quarto-xref">Figure&nbsp;1 (b)</a>) displays three clearly defined blocks of contacts which, in comparison with the protein structure resolved via X-ray diffraction at a high resolution of 1.46 Å, correspond to the three subunits observed in the PDB tertiary structure. Within these blocks, several segments run parallel to the main diagonal, indicating the structural packing between <span class="math inline">\(\alpha\)</span>-helices and <span class="math inline">\(\beta\)</span>-sheets. Finally, the discrete contact zones appearing between different chain identifiers represent the quaternary structure, specifically the trimeric interfaces where the three subunits interact to form the functional protein complex</p>
+<p>Despite the metadata retrieved from the PDB indicating only a single chain, a comparison between the contact map and the PDB 3D structure view suggests the presence of three subunits with identical folds. This observation implies that the functional protein is likely a homotrimer, where the quaternary structure is composed of three identical subunits that were not explicitly detailed as such in the initial metadata.</p>
+    <div id="app-1QRE" class="molstar-app"></div>
+    <script type="text/javascript">
+    molstar.Viewer.create("app-1QRE", {"emdbProvider":"rcsb","layoutIsExpanded":false,"layoutShowControls":false,"layoutShowLeftPanel":true,"layoutShowLog":false,"layoutShowRemoteState":false,"layoutShowSequence":false,"pdbProvider":"rcsb","viewportShowAnimation":false,"viewportShowExpand":true,"viewportShowSelectionMode":false}).then(viewer => {
+    viewer.loadPdb("1QRE");    });
+    </script>
+    
+</section>
+<section id="dgf" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="dgf"><span class="header-section-number">4.3</span> <code>1DGF</code></h2>
+<p>The last one, the 1DGE contact map (<a href="#fig-contact-maps-3" class="quarto-xref">Figure&nbsp;1 (c)</a>) reveals a quaternary structure composed of four identical subunits, identifying it as a homotetramer. This observation is highly consistent with the experimentally resolved structure obtained via X-ray diffraction at a high resolution of 1.5 Å. Both the 3D visualization in the PDB and the contact map exhibit a fold characterized by antiparallel <span class="math inline">\(\beta\)</span>-sheets organized into a barrel structure. These structural elements are packed against <span class="math inline">\(\alpha\)</span>-helices, which further facilitate inter-helical interactions. Furthermore, the PDB data illustrates how the monomers interact; they show a higher density of contacts with adjacent subunits and a significantly lower degree of contact with the monomer located diagonally across the assembly. Consequently, the patterns depicted in the contact map align perfectly with the experimental structure archived in the PDB.</p>
+    <div id="app-1DGF" class="molstar-app"></div>
+    <script type="text/javascript">
+    molstar.Viewer.create("app-1DGF", {"emdbProvider":"rcsb","layoutIsExpanded":false,"layoutShowControls":false,"layoutShowLeftPanel":true,"layoutShowLog":false,"layoutShowRemoteState":false,"layoutShowSequence":false,"pdbProvider":"rcsb","viewportShowAnimation":false,"viewportShowExpand":true,"viewportShowSelectionMode":false}).then(viewer => {
+    viewer.loadPdb("1DGF");    });
+    </script>
+    
+<p>Consequently, contact maps (<a href="#fig-contact-maps" class="quarto-xref">Figure&nbsp;1</a>) provide a comprehensive visualization of how distinct protein regions interact and reveal the specific secondary and tertiary structural motifs that compose them. As demonstrated throughout this project, these maps effectively reflect the organizational complexity of monomeric, trimeric, and tetrameric assemblies.</p>
+<p>Furthermore, contact maps facilitate the identification of recurring structural patterns and the characterization of inter-chain contacts within the quaternary structure. The close agreement between these contact maps and the high-resolution, experimentally resolved structures archived in the PDB underscores the utility of distance-based matrices for elucidating the intricate interactions and architectures of proteins.</p>
+<hr>
+</section>
+</section>
+<section id="conclusion" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> Conclusion</h1>
+<p>In this project, we have successfully developed a robust computational pipeline to analyze protein structures through distance and contact matrices. By leveraging Python and structural data from the PDB, we achieved the efficient generation of contact maps, providing a clear visual representation of complex three-dimensional folds. A critical aspect of this work was the implementation of a coherent distance filtering strategy. By applying thresholds between 6 and 12 Å, we effectively eliminated structural noise, retaining only the biologically significant interactions. This allowed for a precise distinction between intra-chain (tertiary) and inter-chain (quaternary) contacts, pinpointing the exact regions responsible for subunit packing and overall complex stabilization.The results demonstrate that contact maps are powerful tools for structural biology, as they condense thousands of atomic coordinates into identifiable geometric patterns—such as the characteristic signatures of <span class="math inline">\(\alpha\)</span>-helices and <span class="math inline">\(\beta\)</span>-sheets. In conclusion, the methodologies applied in this study provide a reliable and scalable framework for the comparative analysis of protein architectures and their functional interfaces.</p>
+<hr>
+</section>
+<section id="annexes" class="level1" data-number="6">
+<h1 data-number="6"><span class="header-section-number">6</span> Annexes</h1>
+<section id="work-register" class="level2" data-number="6.1">
+<h2 data-number="6.1" class="anchored" data-anchor-id="work-register"><span class="header-section-number">6.1</span> Work Register</h2>
+<p>The development of this project has followed a workflow managed via GitHub, in order it can be reproduced.</p>
+<p>The following table sumarizes the main stages of the project.</p>
+<div id="0867db39" class="cell" data-execution_count="14">
+<div class="cell-output cell-output-display" data-execution_count="14">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Phase</th>
+<th data-quarto-table-cell-role="th">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>Setup</td>
+<td>Repository initialization and project structuring</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>Metadata</td>
+<td>Access to each protein key information via API...</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>Protein structural information</td>
+<td>Get access to PDB files and parse them to gen ...</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>Distance matrix</td>
+<td>Compute the distances matrix between Cα atoms</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>Contact maps</td>
+<td>Plot intra/interchain contacts giving a threshold</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">5</th>
+<td>Report writing</td>
+<td>Create the final file and include all the prev...</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Every modification is documented through a descriptive commit message.</p>
+<p><strong>Repository Access</strong>: https://github.com/MCML-Projects/STRBIO.git</p>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
