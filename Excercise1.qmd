@@ -39,7 +39,7 @@ The main objective of this project is to implement computational functions to:
 
 ## Data Collection
 
-RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, https://www.rcsb.org/) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes. 
+RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, <https://www.rcsb.org/>) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes. 
 
 Each protein in this database is identified with a unique four-character alphanumeric identifier. This identifier allows access to detailed information about the protein, such as atomic coordinates, sequence, experimental methodology and associated metadata.
 
@@ -59,7 +59,7 @@ The data base PDB is one of the most widely used worldwide in the field of bioin
 
 The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
 
-The function defined as @lst-get-metadata performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
+The function defined as @lst-get-metadata performs two independent queries to the RCSB PDB REST API (<https://data.rcsb.org/redoc/index.html>), one at the structural level (<https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById>) and another at the polymer entity level (<https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById>). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
 
 In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function @lst-api-errors, which checks the status code of the response and returns an appropriate message in case of an error. 
 
@@ -949,4 +949,4 @@ table_github
 
 Every modification is documented through a descriptive commit message.
 
-**Repository Access**: https://github.com/MCML-Projects/STRBIO.git 
+**Repository Access**: <https://github.com/MCML-Projects/STRBIO.git> 
