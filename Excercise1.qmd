@@ -1,6 +1,12 @@
 ---
 title: Ex.1 Parsing Protein Structures
-format: html
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-location: left
+    code-fold: true
+    number-sections: true
 Authors: "Marta Aransay, Carlota de la Concepción, Marta Rodrigo, Lucía Santos"
 crossref:
   lst-title: "Function"
@@ -735,6 +741,7 @@ TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 ## `1DGF`
 
 {{< mol-rcsb 1DGF viewportShowAnimation=false >}}
+
 ---
 
 # Conclusion
