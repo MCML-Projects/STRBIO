@@ -813,8 +813,8 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 #|   - "Contact map for the protein 1QRE"
 #|   - "Contact map for the protein 1DGF"
 #| layout-ncol: 1
-#| fig-width: 7
-#| fig-height: 7
+#| fig-width: 4
+#| fig-height: 4
 #| fig-show: hold
 #| fig-align: center
 #| crossref:
