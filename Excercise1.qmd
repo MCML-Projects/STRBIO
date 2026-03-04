@@ -695,7 +695,7 @@ def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, cha
     # Adding legend
     plt.legend(handles=patches, # Text of the legend
               loc="upper right", # Place of the legend
-              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
+              bbox_to_anchor=(1.5, 1.2)) # bbox_to_anchor places legend outside the plot area
  
     # Title and labels
     plt.title(f"CONTACT MAP (Protein: {pdb_id})", fontsize=14)
