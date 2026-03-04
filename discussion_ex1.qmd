@@ -10,11 +10,11 @@ THe second one, the 1QRE protein plot displays three clearly defined blocks of c
 
 Despite the metadata retrieved from the PDB indicating only a single chain, a comparison between the contact map and the PDB 3D structure view suggests the presence of three subunits with identical folds. This observation implies that the functional protein is likely a homotrimer, where the quaternary structure is composed of three identical subunits that were not explicitly detailed as such in the initial metadata.
 
-The last one, the 1DGE protein shows 
+The last one, the 1DGE contact map reveals a quaternary structure composed of four identical subunits, identifying it as a homotetramer. This observation is highly consistent with the experimentally resolved structure obtained via X-ray diffraction at a high resolution of 1.5 Å. Both the 3D visualization in the PDB and the contact map exhibit a fold characterized by antiparallel $\beta$-sheets organized into a barrel structure. These structural elements are packed against $\alpha$-helices, which further facilitate inter-helical interactions. Furthermore, the PDB data illustrates how the monomers interact; they show a higher density of contacts with adjacent subunits and a significantly lower degree of contact with the monomer located diagonally across the assembly. Consequently, the patterns depicted in the contact map align perfectly with the experimental structure archived in the PDB.
 
-Comparacion entre estrucutras (monometro, trimero, tetramero)
+Consequently, contact maps provide a comprehensive visualization of how distinct protein regions interact and reveal the specific secondary and tertiary structural motifs that compose them. As demonstrated throughout this project, these maps effectively reflect the organizational complexity of monomeric, trimeric, and tetrameric assemblies.
 
-Unlike 1RBP, the 1DGF map shows lines running parallel to the main diagonal.
+Furthermore, contact maps facilitate the identification of recurring structural patterns and the characterization of inter-chain contacts within the quaternary structure. The close agreement between these contact maps and the high-resolution, experimentally resolved structures archived in the PDB underscores the utility of distance-based matrices for elucidating the intricate interactions and architectures of proteins
 
 
 
