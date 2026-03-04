@@ -1,5 +1,7 @@
 SEGUNDA ENTREGA P1:
 - Meter la función de matrices y adaptarla para que no se vea tanto
-- cambiar lo de a -> A que dice carlota ¿Redirección?
-- arreglar lo de la leyenda de los plots
+- cambiar lo de (a) -> A que dice carlota. Para que salga más mono solo
+- arreglar lo de la leyenda de los plots, figsize=4 al principio del chunk
 - arreglar los plots (que salga bien la leyenda) sin moverlo
+- arreglar lo de la cita de las figuras @fig-plot-***-1/2/3 en el orden que estén
+- revisar Shiny :o
