@@ -814,8 +814,6 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 #|   - "Contact map for the protein 1QRE"
 #|   - "Contact map for the protein 1DGF"
 #| layout-ncol: 1
-#| fig-width: 7
-#| fig-height: 7
 #| fig-width: 4
 #| fig-height: 4
 #| fig-show: hold
@@ -848,7 +846,6 @@ Finally, if inter-chain distances are included, discrete contact zones appear be
 The 1DGF contact map (@fig-contact-maps-3) reveals prominent segments oriented both parallel and perpendicular to the main diagonal. This dual pattern represents a complex $\alpha/\beta$ architecture, where the parallel lines indicate parallel $\beta$-sheets and the perpendicular segments confirm the presence of antiparallel $\beta$-strands within the same fold. A dense thickening is observed along the entire main diagonal, indicating the presence of multiple $\alpha$-helices, which are characterized by a high frequency of $(i, i+4)$ local interactions.
 
 This pattern is consistently manifested across the diagonal quadrants of the contact matrix; since this pattern repeats four times with high regularity, it suggests that the protein is composed of four identical subunits with the same structural composition. The contacts displayed in the off-diagonal quadrants (indicated in red) represent the interactions between the different polypeptide chains—consistently with the metadata identifying a tetrameric structure—exhibiting a symmetric distribution along the main diagonal. Mapping the chains from bottom-to-top and left-to-right as A, B, C, and D allows for a direct comparison of inter-chain interactions. The analysis reveals that the highest density of contacts occurs between pairs A-B, A-C, B-D, and D-C, whereas a significantly lower number of contacts is observed in the quadrants corresponding to the A-D and B-C interfaces.
-
 
 ---
 # Discussion
