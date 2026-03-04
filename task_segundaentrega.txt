@@ -1,0 +1,5 @@
+SEGUNDA ENTREGA P1:
+- Meter la función de matrices y adaptarla para que no se vea tanto
+- cambiar lo de a -> A que dice carlota ¿Redirección?
+- arreglar lo de la leyenda de los plots
+- arreglar los plots (que salga bien la leyenda) sin moverlo
