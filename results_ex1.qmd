@@ -661,7 +661,7 @@ for id in pdb_list:
   print(f"Number of chains: {num_chains}")
   dist_matrix = distance_matrix(df_struct_info) 
   intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
-  plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id, chains=['A'])
+  plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id) #If chais=['A'] just one chain is displayed
   print("\n\n")
 ```
 
