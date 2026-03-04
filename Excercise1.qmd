@@ -20,7 +20,7 @@ Proteins are macromolecules whose function is highly related to their three-dime
 
 The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB), which stores three-dimensional structures obtained by X-ray crystallography, nuclear magnetic resonance spectroscopy and cryo-electron microscopy. PDB files contain detailed metadata, experimental information, protein sequences, and three-dimensional atomic coordinates. Through computational analysis, this information can be extracted from these files.
 
-To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα of all the residues in a protein. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
+To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα atoms of residues within a protein or between different protein chains. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
 
 Nowadays, although modelling and structure prediction methods have achieved high levels of accuracy, the analysis of atomic coordinates is still essential to understand the spatial organization of proteins and macromolecular complexes.
 
@@ -47,7 +47,7 @@ The structures analyzed in this project correspond to the following proteins:
 
 - **Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: 1RBP)**, which is involved in retinol transport in humans.
 - **Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: 1QRE)**, which regulates pH by catalyzing the reaction between $CO_2$ and $H_2O$ to produce bicarbonate and protons.
-- **Catalase (*Homo sapiens*, PDB ID: 1DGF)**, which cells from oxidative damage by decomposing $H_2O_2$ into water and oxygen.
+- **Catalase (*Homo sapiens*, PDB ID: 1DGF)**, which protect cells from oxidative damage by decomposing $H_2O_2$ into water and oxygen.
 
 ## Parsing PDB Files
 
@@ -347,7 +347,7 @@ To understand how a protein folds and how its redidues interact with each other,
 
 PDB stablished a standardized, human-readable text format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of record, utilizing fixed-width columns. The file begins with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. This is followed by the atomic coordinates section, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a connectivity section that describes how these atoms are bonded to form the overall structure of the molecule.
 
-To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PSB API to obtain raw textual data of the PDB file. It then parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PDB API to obtain raw textual data of the PDB file. It then parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
 
 The function also, translates the three-letter amino acid codes into one-letter codes using a mapping dictionary. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured dataframe that will be used for subsequent distance and contact map calculations.
 
@@ -543,11 +543,11 @@ def distance_matrix(df_structural_info):
 
 ## Contact Map Calculation
 
-In proteins, there can be both intrachain and interchain contacts, taking that into account, @lst-contact-map function was implemented to generate the corresponding matrices from the pairwise $C\alpha$ distance matrix and residue chain information. 
+In proteins, there can be both intrachain and interchain contacts, taking that into account, @lst-contact-matrix function was implemented to generate the corresponding matrices from the pairwise Cα distance matrix and residue chain information. 
 
 Contacts were defined using a specific distance threshold, set by default between 6 Å and 12 Å. Distances below 6 Å are excluded to avoid trivial sequential contacts (immediate neighbors along the backbone), while distance above 12 Å are generally too far for meaningful non-covalent interactions. This range captures the most relevant spatial interactions associated with protein folding and function.
 
-To visualize the computed contact matrices of each protein @lst-contact-matrix function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. This make easier the identification of oligomers.
+To visualize the computed contact matrices of each protein @lst-contact-map function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively, which makes it easier the identification of oligomers.
 
 ### Code Implementation
 
