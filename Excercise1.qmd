@@ -2,6 +2,9 @@
 title: Ex.1 Parsing Protein Structures
 format: html
 Authors: "Marta Aransay, Carlota de la Concepción, Marta Rodrigo, Lucía Santos"
+crossref:
+  lst-title: "Function"
+  lst-prefix: "Function"
 date: 04/03/2026
 ---
 
@@ -45,17 +48,16 @@ The structures analyzed in this project correspond to the following proteins:
 ## Parsing PDB Files
 
 ::: {.callout-note}
- Before introducing the main functions of the project, it is important to highlight the implmentation of the @setup-libraries function, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
+ Before introducing the main functions of the project, it is important to highlight the implmentation of @lst-setup-libraries, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
 :::
 
-
-The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @get_metadata_function.
+The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @lst-get-metadata.
 
 The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
 
-The function defined as @get_metadata_function performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
+The function defined as @lst-get-metadata performs two independent queries to the RCSB PDB REST API (https://data.rcsb.org/redoc/index.html), one at the structural level (https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById) and another at the polymer entity level (https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
 
-In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function @handle_API_error_function, which checks the status code of the response and returns an appropriate message in case of an error. 
+In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function @lst-api-errors, which checks the status code of the response and returns an appropriate message in case of an error. 
 
 Once the queries are successful, the function extracts the relevant information from the JSON responses:
 
@@ -74,16 +76,19 @@ table_info
 
 ```
 
-There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function @extract_metadata_function is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
+There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function (@lst-extract-metadata) is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
 
-All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. This is done through the @metadata_to_csv_function, which takes the metadata dictionary and the desired file name as input and saves the DataFrame as a CSV file. 
+All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. This is done through the @lst-get-metadata, which takes the metadata dictionary and the desired file name as input and saves the DataFrame as a CSV file. 
 
 ### Code Implementation
 
 ```{python}
-#| label: setup-libraries
+#| label: lst-setup-libraries
+#| lst-cap: "Set up necessary libraries."
 #| message: false
 #| warning: false
+#| code-fold: true
+#| code-summary: "Click to see imported libraries."
 
 import requests
 import pandas as pd
@@ -95,7 +100,10 @@ import matplotlib.patches as mpatches
 ```
 
 ```{python}
-#| label: handle_API_error_function
+#| label: lst-api-errors
+#| lst-cap: "Function for handling HTTP request errors."
+#| code-fold: true
+#| code-summary: "Click to see handle_API_error function."
 
 def handle_API_error(id, status_code = None, flag_timeout = False):
     """
@@ -154,7 +162,11 @@ def handle_API_error(id, status_code = None, flag_timeout = False):
 ```
 
 ```{python}
-#| label: extract_metadata_function
+#| label: lst-extract-metadata
+#| lst-cap: "Function for extracting and joining metadata information."
+#| code-fold: true
+#| code-summary: "Click to see extract_join_metadata function."
+
 def extract_join_metadata(data_dict, metadata_key, subkey=None):
     """
     Extract values from a metadata dictionary and join them into a string.
@@ -196,23 +208,30 @@ def extract_join_metadata(data_dict, metadata_key, subkey=None):
 ```
 
 ```{python}
-#| label: get_metadata_function
+#| label: lst-get-metadata
+#| lst-cap: "Function for getting the metadata information."
+#| code-fold: true
+#| code-summary: "Click to see get_metadata_info function."
 
-def get_metadata_info(pdb_id):
+def get_metadata_info(pdb_id, filename=None):
     """
     Parse a PDB (Protein Data Bank) file and extract metadata information.
     Extracts and formats some metadata via extract_join_metadata function.
     Handles API errors via handle_API_error function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
     
     Parameters
     ----------
     pdb_id : str
         Unique identifier for the PDB file.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
     
     Returns
     -------
-    metadata : dict
-        Dictionary containing PDB metadata.
+    df : pd.DataFrame
+        A pandas DataFrame containing the metadata.
         Or None if an error occurs.
     """
     # Define endpoints for RCSB PDB Data API 
@@ -307,45 +326,15 @@ def get_metadata_info(pdb_id):
         "Number of Peptide Chains": num_chains,
         "Number of Other Molecules": molecules
     }
-    return metadata
-```
-
-```{python}
-#| label: metadata_to_csv_function
-
-def save_metadata_csv(pdb_id, filename):
-    """
-    Extracts metadata from PDB ID via get_metadata_info function
-    Stores the results in a pandas DataFrame and writes it to a CSV file.
-    
-    Parameters
-    ----------
-    pdb_id : str
-        PDB ID to be parsed.
-    filename : str
-        The output CSV file path where metadata will be saved.
-    
-    Returns
-    -------
-    df : pd.DataFrame
-        A pandas DataFrame containing the metadata.
-    """
-    # Fetch metadata dictionary for the single PDB ID
-    metadata_info = get_metadata_info(pdb_id) 
-
     # Pass as a list to avoid "Scalar values" index error in Pandas
-    df = pd.DataFrame([metadata_info])
+    df = pd.DataFrame([metadata])
 
-    
-    # Export the DataFrame to a CSV file
     if filename:
         # Export the DataFrame to a CSV file
         df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
         print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
-    
-    print(f"Metadata for {pdb_id} successfully saved to {filename}")
 
-    return df
+    return metadata
 ```
 
 ## Structural Infrormation Extraction and Distance Matrix Calculation
@@ -354,32 +343,211 @@ To understand how a protein folds and how its redidues interact with each other,
 
 PDB stablished a text standard  and human readable format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of information, they are fixed register lines with specific fields. The file start with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. Then, there is a section with the atomic coordinates, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a section with the connectivity information, which describes how the atoms are connected to form residues and chains.
 
-To extract the mentioned data, we have implemented the function @get_structural_info_function, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
 
 The function also, traduce the aminoacid three-letter code to one-letter code, through a mapping dictionary. 
 
 Finally, the function extract the chain, number of residue and the cartesian coordinates (x, y, z), and return a dataframe that will be used for the subsequent distance and contact map calculations.
 
-- FALTA AÑADIR FUNCIONES AUXILIARES QUE USE
-- FALTA AÑADIR EL CÁLCULO DE LAS DISTANCAS 
-- FALTA AÑADIR EL CÓDIGO
+```{python}
+#| label: lst-get-structural-info
+#| lst-cap: "Function for getting the structural information."
+#| code-fold: true
+#| code-summary: "Click to see get_structural_info function."
 
+def get_structural_info(pdb_id, flag_assembly=False, filename=None):
+    """
+    Retrieve and parse structural information from a PDB (Protein Data Bank) file.
+    Extracts backbone data by filtering for Alpha Carbon atoms, as a simplified representation of the protein structure.
+    Structural information extracted: chain, residue number, amino acid, 
+    and cartesian coordinates (x, y, z).
+    Handles API errors via handle_API_error function.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    flag_assembly : bool, optional
+        If true, enables parsing for biological assembly files to handle multimeric structures.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
+
+    Returns
+    -------
+    results_df : pd.DataFrame
+        A DataFrame containing structural information with columns:
+        - chain: Protein chain identifier
+        - residue_number: Sequence number of the residue
+        - amino_acid: Single-letter amino acid code
+        - x, y, z: Cartesian coordinates of the alpha carbon atom
+    
+        Returns None if the request fails due to timeout or HTTP error.
+    """
+    if flag_assembly: # Define the download endpoint for the biological assembly file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb1"
+    else: # Define the download endpoint for the raw PDB file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    
+    # Handling with Timeout and Errors 
+    try:
+        response = requests.get(url, 
+                               timeout = 100)
+    
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        handle_API_error(pdb_id, flag_timeout = True)
+        return
+
+    # Handle HTTP status code with handle_API_error and check if the request was successful
+    flag = handle_API_error(pdb_id, status_code = response.status_code)
+    
+    if not flag:  # Proceed only if the request was successful (flag: True)
+        return
+
+    # Execution continues only if a 200 OK status is received
+
+    # Mapping for 3-letter to 1-letter amino acid codes
+    aa_map = {
+        "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C", "GLN": "Q", "GLU": "E", 
+        "GLY": "G", "HIS": "H", "ILE": "I", "LEU": "L", "LYS": "K", "MET": "M", "PHE": "F", 
+        "PRO": "P", "SER": "S", "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V"
+    }
+
+    # Access the raw text content of the PDB file
+    pdb_data = response.text # .text because is a .pdb file
+
+    ############ Structural data extraction ############
+
+    results = [] # List to store extracted structural data
+    current_model = 0 # If there is more than one model in the .pdb1 file
+    for line in pdb_data.split("\n"): # Parse .pdb file line by line
+        
+        if flag_assembly:
+            if line.startswith("MODEL"): # Biological units are separated by "MODEL" records
+                try:
+                    # Extract the model number (columns 11-14)
+                    current_model = int(line[10:14].strip()) 
+                except: # Keep previous model index if parsing fails
+                    pass
+
+        if line.startswith("ATOM"): # Processing only atom lines
+            # The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)
+            # Extract atom name (columns 13-16)
+            atom_name = line[12:16].strip() # .strip() to remove blank spaces
+
+            # Filter for Alpha Carbons (CA) to represent the protein backbone
+            if atom_name == "CA": 
+                # Extract 3-letter amino acid name (columns 18-20)
+                aa_name = line[17:20].strip() 
+                # Convert 3-letter to 1-letter using aa_map dictionary
+                aa_name_1 = aa_map.get(aa_name, "X") # "X" for non-canonical residues
+
+                # Extract XYZ coordinates from their fixed positions
+                coord_x = line[30:38].strip() # X (columns 31-38)
+                coord_y = line[38:46].strip() # Y (columns 39-46)
+                coord_z = line[46:54].strip() # Z (columns 47-54)
+                
+                # Extract chain identifier (column 22)
+                chain = line[21:22].strip()
+
+                if current_model > 1:
+                    # Create a unique ID for repeated chains in the assembly
+                    unique_chain = f"{chain}_{current_model}"
+                else:  # Keep original chain ID for the first model
+                    unique_chain = chain
+
+                # Extract residue sequence number (columns 23-26)
+                residue_number = line[22:26].strip() 
+                
+                # Append record to the results list
+                results.append({
+                               "chain": unique_chain,
+                               "residue_number": residue_number,
+                               "amino_acid": aa_name_1,
+                               "x": float(coord_x),
+                               "y": float(coord_y),
+                               "z": float(coord_z)
+                            })
+    
+    # Transform data into a df
+    results_df = pd.DataFrame(results)
+
+    if filename:
+        # Export the DataFrame to a CSV file
+        results_df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Structural data for {pdb_id} successfully saved to {filename}.csv")
+
+    return results_df
+```
 
 ## Distance and Contact Map Calculations
 
-[Primero hacer una introduccion a que es la distancia el mapa de contacto (por qué son útiles), meter alguna explicacion matemática, y luego lo mismo que antes, describir las partes más importantes del código.]
+To understand a protein's three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. By calculating these distances, we can identify secondary structural elements and determine the tertiary or quaternary folding patterns that are crucial for the protein's biological function.
 
-\[
-d_{ij}^2 = (x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2
-\]
+Mathematically, since each amino acid is represented by the Cartesian coordinates $(x, y, z)$ of its alpha carbon ($C\alpha$), the distance $d$ between two residues $i$ and $j$ is calculated using the three-dimensional *Euclidean distance formula*:
+$$d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}$$
 
-There can be both intrachain and interchain contacts, taking that into account, @contact_matrix_function function was implemented to generate the corresponding matrices from the pairwise Cα distance matrix and residue chain information. Contacts were defined using a distance threshold between 6 Å and 12 Å by default, excluding trivial sequential contacts and focusing on spatially relevant interactions associated with protein folding. 
+As a result, the matrix is square and symmetric, with diagonal elements always being zero, because they represent the distance of a residue to itself. Values close to the diagonal typically represent local interactions, while values far from the diagonal indicate long-range contacts between residues that are distant in the linear sequence but close in 3D space. 
 
-To visualize the computed contact matrices of each protein @plot_contact_matrix_function function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. This make easier the identification of oligomers.
-
+To compute this, we implemented the @lst-distance-matrix, which extracts the $(x, y, z)$ coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).
 
 ```{python}
-#| label: contact_matrix_function
+#| label: lst-distance-matrix
+#| lst-cap: "Function for calculating the distance matrix."
+#| code-fold: true
+#| code-summary: "Click to see distance_matrix function."
+
+def distance_matrix(df_structural_info):
+    """
+    Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.
+
+    Parameters
+    ----------
+    df_structural_info : pandas.DataFrame
+        A dataframe containing structural information with columns:
+                chain / residue_number / amino_acid / x / y / z
+    Returns
+    -------
+    distance_matrix : numpy.ndarray
+        A square symmetric matrix of shape (n, n) where n is the number of CA atoms.
+        Each element [i, j] contains the Euclidean distance between CA atoms i and j in angstroms.
+        Diagonal elements are zero.
+    """
+    # Matrix size corresponds to the number of residues/atoms
+    size = len(df_structural_info) 
+    # Initialize a square matrix of zeros
+    distance_matrix = np.zeros((size, size)) 
+
+    # Extract xyz coordinates as a NumPy array (each row is [x, y, z])
+    coordinates = df_structural_info[["x","y","z"]].values 
+
+    # Iterate through each pair of coordinates to calculate distances
+    for row, coord1 in enumerate(coordinates): # Reference coordinate
+        for column, coord2 in enumerate(coordinates): # Comparison coordinate
+
+            # Calculate the difference in each dimension
+            dx = coord2[0] - coord1[0]
+            dy = coord2[1] - coord1[1]
+            dz = coord2[2] - coord1[2]
+
+            # Apply the 3D distance formula: sqrt(dx^2 + dy^2 + dz^2)
+            distance = math.sqrt(math.pow(dx, 2) + math.pow(dy, 2) + math.pow(dz, 2))
+
+            # Store the result in the corresponding matrix cell
+            distance_matrix[row,column] = distance 
+
+    return distance_matrix
+```
+
+In proteins, there can be both intrachain and interchain contacts, taking that into account, @lst-contact-map function was implemented to generate the corresponding matrices from the pairwise $C\alpha$ distance matrix and residue chain information. Contacts were defined using a distance threshold between 6 Å and 12 Å by default, excluding trivial sequential contacts and focusing on spatially relevant interactions associated with protein folding. 
+
+To visualize the computed contact matrices of each protein @lst-contact-matrix function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. This make easier the identification of oligomers.
+
+```{python}
+#| label: lst-contact-matrix
+#| lst-cap: "Function for calculating the contact matrices."
+#| code-fold: true
+#| code-summary: "Click to see contact_matrix function."
+
 def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distance=12):
     """
     Generate intrachain and interchain contact matrices based on distance thresholds.
@@ -435,28 +603,50 @@ def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distanc
 ```
 
 ```{python}
-#| label: plot_contact_matrix_function
+#| label: lst-contact-map
+#| lst-cap: "Function for plotting the contact map."
+#| code-fold: true
+#| code-summary: "Click to see plot_contact_map."
 
-def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, pdb_id="Protein", filename=None):
-    
+def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, chains=None, pdb_id="-", filename=None):
+    """
+    falta docstring
+    """
+    if chains:
+        # Check if all requested chains are present in the structural information
+        available_chains = structural_info["chain"].unique()
+        for chain in chains:
+            if chain not in available_chains:
+                print(f"One or more requested chains are not present.")
+                return
+            
+        # Filter the structural info and get the indices of the rows we keep
+        # This is crucial to also slice the matrices correctly later if they don't match
+        chains_requested_bool_matrix = structural_info["chain"].isin(chains)
+        structural_info = structural_info[chains_requested_bool_matrix]
+                
+        indices = np.where(chains_requested_bool_matrix)[0]
+        intrachain_matrix = intrachain_matrix[np.ix_(indices, indices)]
+        interchain_matrix = interchain_matrix[np.ix_(indices, indices)]
+        
     # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
+    
+    plt.figure(figsize=(10, 12)) # Size of the plot
 
-    plt.figure(figsize=(8, 8)) # size of the plot
-
-    # Plot Intra-chain contacts in Green
+    # Plot Intra-chain contacts in Green       
     plt.imshow(intrachain_matrix, 
-              cmap="Greens_r", 
-              interpolation="none", # Prevents  (each pixel represents one residue)
-              origin="lower") # origin="lower" to ensure the (0,0) index starts at the bottom-left
+              cmap="Greens_r", # Sets the color palette to Reversed Greens
+              interpolation="none", # Prevents blurring; each pixel represents exactly one residue
+              origin="lower") # Places the (0,0) index at the bottom-left corner
 
     # Plot Inter-chain contacts in Green
-    # Since contact matrices contain NaNs, the second plot won't overwrite the first.
+    # Since contact matrices contain NaNs, the second plot won't overwrite the first
     plt.imshow(interchain_matrix, 
-              cmap="Reds", 
+              cmap="Reds_r", 
               interpolation="none", 
               origin="lower")
-
+    
     # Manually creating patches for the legend
     green_patch = mpatches.Patch(color="green", 
                                 label="Intra-chain contact") 
@@ -467,10 +657,10 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     # Adding legend
     plt.legend(handles=patches, # Text of the legend
               loc="upper right", # Place of the legend
-              bbox_to_anchor=(1.55, 1)) # bbox_to_anchor places legend outside the plot area
+              bbox_to_anchor=(1.35, 1)) # bbox_to_anchor places legend outside the plot area
  
     # Title and labels
-    plt.title(f"CONTACT MAP (Protein: {pdb_id}) (6-12 Å)", fontsize=14)
+    plt.title(f"CONTACT MAP (Protein: {pdb_id})", fontsize=14)
     plt.xlabel("Residue Index", fontsize=12)
     plt.ylabel("Residue Index", fontsize=12)
     
@@ -485,9 +675,9 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     for each_chain in chain_per_res:
         if each_chain not in unique_chains: 
             unique_chains.append(each_chain)
-            unique_chains_label.append(f"Chain {each_chain}")
+            unique_chains_label.append(f"Chain {each_chain}") # Create labels to plot them
     
-    # Plots the lines between different chains
+    # Draw lines to visually separate the different chains in the matrix
     for idx in idx_changes:
         # Add 0.5 to place the line exactly between the pixels of two residues
         plt.axhline(y=idx + 0.5, color="black", linestyle="--")
@@ -496,15 +686,22 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
     # Place the labels of the chain names at the midpoint of each boundary
     ticks = []
     for i in range(len(boundaries) - 1):
-        midpoint = (boundaries[i] + boundaries[i+1]) / 2
-        ticks.append(midpoint)
+        midpoint = (boundaries[i] + boundaries[i+1]) / 2 # Calculate the midpoint of each chain segment
+        ticks.append(midpoint) # Appends ticks
 
-    # Set the ticks and labels on both axes
-    plt.xticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
-    plt.yticks(ticks, unique_chains_label, fontsize=10, fontweight='bold')
+    # Set up secondary axes to display chain labels
+    axes = plt.gca() # Grabs the active plot area
+    sec_xaxis= axes.secondary_xaxis("top") # Attaches a new axis to the top of that area
+    sec_yaxis = axes.secondary_yaxis("right") # Attaches a new axis to the right of that area
+
+    # Assign chain names to the secondary ticks
+    sec_xaxis.set_xticks(ticks)
+    sec_xaxis.set_xticklabels(unique_chains_label, fontsize=10)
     
+    sec_yaxis.set_yticks(ticks)
+    sec_yaxis.set_yticklabels(unique_chains_label, fontsize=10)
+
     plt.tight_layout() # Ensures labels/legend don't get cut off
-    plt.show()
 
     if filename: # Check if a filename was provided to save the image
         # Save the figure as a PNG file
@@ -512,6 +709,8 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
                     dpi=300, # dpi=300 ensures high resolution
                     bbox_inches="tight") # bbox_inches="tight" prevents labels from being cut off
         print(f"Contact plot for {pdb_id} successfully saved to {filename}.png")
+
+    plt.show()
 ```
 
 ---
@@ -520,10 +719,22 @@ def plot_contact_matrix (structural_info, intrachain_matrix, interchain_matrix, 
 
 TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 
+
 ---
 
 # Discussion
 
+## `1RBP`
+
+{{< mol-rcsb 1RBP viewportShowAnimation=false >}}
+
+## `1QRE`
+
+{{< mol-rcsb 1QRE viewportShowAnimation=false >}}
+
+## `1DGF`
+
+{{< mol-rcsb 1DGF viewportShowAnimation=false >}}
 ---
 
 # Conclusion

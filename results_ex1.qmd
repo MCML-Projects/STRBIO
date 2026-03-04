@@ -9,15 +9,578 @@ execute:
   warning: false    # Oculta avisos innecesarios en el informe
 ---
 
+
+#####CARLOTA PERDÓN ESTO ES PARA QUE FUNCIONE:
+```{python}
+
+import requests
+import pandas as pd
+import numpy as np
+import math
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches 
+
+def handle_API_error(id, status_code = None, flag_timeout = False):
+    """
+    Handles HTTP request errors or timeouts and prints informative messages in
+    order to centralize the management of API request errors.
+
+    Parameters
+    ----------
+    id : str
+        PDB ID queried in the request.
+    status_code : int
+        HTTP status code returned by the request. 
+        None by default (in case of timeout error).
+    flag_timeout : bool
+        Indicates whether the request failed due to a timeout.
+        If True, the status_code is ignored.
+        alse by default.
+
+    Returns
+    -------
+        bool (True)
+            True if the request was successful (status code 200).
+            None returned for any error or timeout condition.
+    """
+    if flag_timeout: # If a timeout occurred, skip all other checks
+        print(f"[408] Timeout error for ID: {id}.")
+        
+    else:
+        if status_code == 200: # If the request was successful, returns True
+            return True
+        
+        elif status_code == 301 or status_code == 302:
+            # Resource has been permanently or temporarily moved
+            print(f"[301] or [302] The object was moved to other route")
+
+        elif status_code == 400:
+            # Request processed but considered unsuccessful
+            print(f"[400] Not valid ID: {id}")
+
+        elif status_code == 404:
+            # Request processed but no result was obtained
+            print(f"[404] Result not found for ID: {id}")
+
+        elif status_code == 429:
+            # Request rejected due to request rate limits
+            print(f"[429] Error: Too many requests.")
+
+        elif status_code == 500 or status_code == 503:
+            # Request failed due to internal server issues
+            print("[500] or [503] Internal Server Error")
+
+        else: # For any other error status code
+            print(f"Error: {status_code}")
+        
+        return # For all cases except status_code == 200, function returns None
+
+
+def extract_join_metadata(data_dict, metadata_key, subkey=None):
+    """
+    Extract values from a metadata dictionary and join them into a string.
+
+    Parameters
+    ----------
+    data_dict : dict
+        Dictionary containing the metadata entries.
+    metadata_key : str
+        Key in `data_dict` whose value should be a list.
+    subkey : str, optional
+        Key to use within each list element.  
+        If `None` the list elements are used directly.
+
+    Returns
+    -------
+    str
+        Comma-separated string of extracted values.
+        "N/A"` if the list is empty or no values were found.
+    """
+    # Retrieve the list of items associated with metadata_key
+    items = data_dict.get(metadata_key, []) # default to an empty list if not found
+
+    extracted_items = [] # empty list
+
+    if subkey: # In case there is a subkey
+        for item in items: # Iterate through items
+            # Get the value for the specific subkey
+            value = item.get(subkey) # NO second arg to avoid list of "N/A"
+            if value: 
+                # If there is a value, it is added to the list
+                extracted_items.append(value)
+   
+    # Return a string (comma-separated) if data was found 
+    if extracted_items:
+        return ", ".join(extracted_items) 
+    else: # Otherwise, return "N/A"
+        return "N/A" 
+
+def get_metadata_info(pdb_id, filename=None):
+    """
+    Parse a PDB (Protein Data Bank) file and extract metadata information.
+    Extracts and formats some metadata via extract_join_metadata function.
+    Handles API errors via handle_API_error function.
+    Stores the results in a pandas DataFrame.
+    If a path is provided, writes it to a CSV file.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
+    
+    Returns
+    -------
+    df : pd.DataFrame
+        A pandas DataFrame containing the metadata.
+        Or None if an error occurs.
+    """
+    # Define endpoints for RCSB PDB Data API 
+    # Entry API: Global metadata -> PDB ID; Determination Method; Authors; 
+    #                               Release Date; Resolution; Number of peptide chains; 
+    #                               Number of Other molecules
+    url_entry = f"https://data.rcsb.org/rest/v1/core/entry/{pdb_id}"
+
+    # Entity API: Specific data for cheminal entities
+    entity_id = 1 # Using 1 for the primary polymer (protein)
+    url_entity = f"https://data.rcsb.org/rest/v1/core/polymer_entity/{pdb_id}/{entity_id}" 
+
+    # Handling with Timeout and Errors (only two possibilities: 200 / 404)
+    try:
+        response_entry = requests.get(url_entry,
+                                     timeout = 100) 
+        response_entity = requests.get(url_entity,
+                                      timeout = 100) 
+
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        handle_API_error(pdb_id, flag_timeout = True)
+        return
+    
+    # Validate that PDB ID exists in both endopoints
+    flag_entry = handle_API_error(pdb_id, status_code = response_entry.status_code)
+    flag_entity = handle_API_error(pdb_id, status_code = response_entity.status_code)
+
+    if not flag_entry or not flag_entity:
+        return
+    
+    # Execution continues only if a 200 OK status is received
+    
+    # Parse JSON responses
+    data_entry = response_entry.json()
+    data_entity = response_entity.json()
+
+    ############ Metadata extraction ############
+
+    # ---- PDB ID
+    id = data_entry.get("rcsb_id", "N/A") # Default to "N/A" if rcsb_id is not found
+
+    # ---- Protein name
+    # Default to empty dict to safely chain subsequent .get() calls
+    polymer_entity = data_entity.get("rcsb_polymer_entity", {}) 
+    prot_name = polymer_entity.get("pdbx_description", "N/A") 
+    
+    # ---- Source Organism
+    # Extract and format via extract_join_metadata
+    source_organisms = extract_join_metadata(data_entity,
+                                            "rcsb_entity_source_organism", 
+                                            subkey="ncbi_scientific_name") 
+
+    # ---- Determination Method
+    det_method = extract_join_metadata(data_entry, 
+                                      "exptl", 
+                                      subkey="method")
+
+    # ---- Authors
+    primary_cit = data_entry.get("rcsb_primary_citation", {}) 
+    authors = extract_join_metadata(data_entry, 
+                                   "rcsb_authors") 
+
+    # ---- Release date
+    acc_info = data_entry.get("rcsb_accession_info", {}) 
+    date = acc_info.get("initial_release_date", "N/A")
+
+    # ---- Resolution
+    entry_info = data_entry.get("rcsb_entry_info", {}) 
+    resolution = entry_info.get("resolution_combined", []) 
+    if resolution: # If resolution is not an empty list
+        resolution = resolution[0] # To remove "[]" 
+    else:
+        resolution = "N/A"
+
+    # ---- Number of peptide chains
+    num_chains = entry_info.get("polymer_entity_count_protein", "N/A")
+
+    # ---- Other molecules
+    molecules = entry_info.get("nonpolymer_entity_count", "N/A")
+
+    ############ Metadata dictionary ############
+
+    # Assemble the metadata dictionary
+    metadata = {
+        "PDB ID": id,
+        "Protein Name": prot_name,
+        "Source Organims": source_organisms,
+        "Determination Method": det_method,
+        "Authors": authors,
+        "Release Date": date,
+        "Resolution": resolution,
+        "Number of Peptide Chains": num_chains,
+        "Number of Other Molecules": molecules
+    }
+    # Pass as a list to avoid "Scalar values" index error in Pandas
+    df = pd.DataFrame([metadata])
+
+    if filename:
+        # Export the DataFrame to a CSV file
+        df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
+
+    return metadata
+
+
+def get_structural_info(pdb_id, flag_assembly=False, filename=None):
+    """
+    Retrieve and parse structural information from a PDB (Protein Data Bank) file.
+    Extracts backbone data by filtering for Alpha Carbon atoms, as a simplified representation of the protein structure.
+    Structural information extracted: chain, residue number, amino acid, 
+    and cartesian coordinates (x, y, z).
+    Handles API errors via handle_API_error function.
+    
+    Parameters
+    ----------
+    pdb_id : str
+        Unique identifier for the PDB file.
+    flag_assembly : bool, optional
+        If true, enables parsing for biological assembly files to handle multimeric structures.
+    filename : str, optional
+        The output CSV file path where metadata will be saved.
+
+    Returns
+    -------
+    results_df : pd.DataFrame
+        A DataFrame containing structural information with columns:
+        - chain: Protein chain identifier
+        - residue_number: Sequence number of the residue
+        - amino_acid: Single-letter amino acid code
+        - x, y, z: Cartesian coordinates of the alpha carbon atom
+    
+        Returns None if the request fails due to timeout or HTTP error.
+    """
+    if flag_assembly: # Define the download endpoint for the biological assembly file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb1"
+    else: # Define the download endpoint for the raw PDB file
+        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+    
+    # Handling with Timeout and Errors 
+    try:
+        response = requests.get(url, 
+                               timeout = 100)
+    
+    except requests.exceptions.Timeout: # Handling Timeout Error
+        handle_API_error(pdb_id, flag_timeout = True)
+        return
+
+    # Handle HTTP status code with handle_API_error and check if the request was successful
+    flag = handle_API_error(pdb_id, status_code = response.status_code)
+    
+    if not flag:  # Proceed only if the request was successful (flag: True)
+        return
+
+    # Execution continues only if a 200 OK status is received
+
+    # Mapping for 3-letter to 1-letter amino acid codes
+    aa_map = {
+        "ALA": "A", "ARG": "R", "ASN": "N", "ASP": "D", "CYS": "C", "GLN": "Q", "GLU": "E", 
+        "GLY": "G", "HIS": "H", "ILE": "I", "LEU": "L", "LYS": "K", "MET": "M", "PHE": "F", 
+        "PRO": "P", "SER": "S", "THR": "T", "TRP": "W", "TYR": "Y", "VAL": "V"
+    }
+
+    # Access the raw text content of the PDB file
+    pdb_data = response.text # .text because is a .pdb file
+
+    ############ Structural data extraction ############
+
+    results = [] # List to store extracted structural data
+    current_model = 0 # If there is more than one model in the .pdb1 file
+    for line in pdb_data.split("\n"): # Parse .pdb file line by line
+        
+        if flag_assembly:
+            if line.startswith("MODEL"): # Biological units are separated by "MODEL" records
+                try:
+                    # Extract the model number (columns 11-14)
+                    current_model = int(line[10:14].strip()) 
+                except: # Keep previous model index if parsing fails
+                    pass
+
+        if line.startswith("ATOM"): # Processing only atom lines
+            # The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)
+            # Extract atom name (columns 13-16)
+            atom_name = line[12:16].strip() # .strip() to remove blank spaces
+
+            # Filter for Alpha Carbons (CA) to represent the protein backbone
+            if atom_name == "CA": 
+                # Extract 3-letter amino acid name (columns 18-20)
+                aa_name = line[17:20].strip() 
+                # Convert 3-letter to 1-letter using aa_map dictionary
+                aa_name_1 = aa_map.get(aa_name, "X") # "X" for non-canonical residues
+
+                # Extract XYZ coordinates from their fixed positions
+                coord_x = line[30:38].strip() # X (columns 31-38)
+                coord_y = line[38:46].strip() # Y (columns 39-46)
+                coord_z = line[46:54].strip() # Z (columns 47-54)
+                
+                # Extract chain identifier (column 22)
+                chain = line[21:22].strip()
+
+                if current_model > 1:
+                    # Create a unique ID for repeated chains in the assembly
+                    unique_chain = f"{chain}_{current_model}"
+                else:  # Keep original chain ID for the first model
+                    unique_chain = chain
+
+                # Extract residue sequence number (columns 23-26)
+                residue_number = line[22:26].strip() 
+                
+                # Append record to the results list
+                results.append({
+                               "chain": unique_chain,
+                               "residue_number": residue_number,
+                               "amino_acid": aa_name_1,
+                               "x": float(coord_x),
+                               "y": float(coord_y),
+                               "z": float(coord_z)
+                            })
+    
+    # Transform data into a df
+    results_df = pd.DataFrame(results)
+
+    if filename:
+        # Export the DataFrame to a CSV file
+        results_df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
+        print(f"Structural data for {pdb_id} successfully saved to {filename}.csv")
+
+    return results_df
+
+
+
+def distance_matrix(df_structural_info):
+    """
+    Calculate the Euclidean distance matrix between all alpha carbon (CA) atoms in a protein structure.
+
+    Parameters
+    ----------
+    df_structural_info : pandas.DataFrame
+        A dataframe containing structural information with columns:
+                chain / residue_number / amino_acid / x / y / z
+    Returns
+    -------
+    distance_matrix : numpy.ndarray
+        A square symmetric matrix of shape (n, n) where n is the number of CA atoms.
+        Each element [i, j] contains the Euclidean distance between CA atoms i and j in angstroms.
+        Diagonal elements are zero.
+    """
+    # Matrix size corresponds to the number of residues/atoms
+    size = len(df_structural_info) 
+    # Initialize a square matrix of zeros
+    distance_matrix = np.zeros((size, size)) 
+
+    # Extract xyz coordinates as a NumPy array (each row is [x, y, z])
+    coordinates = df_structural_info[["x","y","z"]].values 
+
+    # Iterate through each pair of coordinates to calculate distances
+    for row, coord1 in enumerate(coordinates): # Reference coordinate
+        for column, coord2 in enumerate(coordinates): # Comparison coordinate
+
+            # Calculate the difference in each dimension
+            dx = coord2[0] - coord1[0]
+            dy = coord2[1] - coord1[1]
+            dz = coord2[2] - coord1[2]
+
+            # Apply the 3D distance formula: sqrt(dx^2 + dy^2 + dz^2)
+            distance = math.sqrt(math.pow(dx, 2) + math.pow(dy, 2) + math.pow(dz, 2))
+
+            # Store the result in the corresponding matrix cell
+            distance_matrix[row,column] = distance 
+
+    return distance_matrix
+
+
+def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distance=12):
+    """
+    Generate intrachain and interchain contact matrices based on distance thresholds.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural information with at least a "chain" column.
+    distance_matrix : np.ndarray
+        Matrix of pairwise distances between residues.
+    min_distance : int
+        Minimum distance threshold in Angstroms (default: 6).
+    max_distance : int
+        Maximum distance threshold in Angstroms (default: 12).
+
+    Returns
+    -------
+    tuple 
+        matrix_intra : np.ndarray
+            2D contact matrix containing distances for intrachain contacts.
+            Non-contact positions are NaN.
+        matrix_inter : np.ndarray
+            2D contact matrix containing distances for interchain contacts.
+            Non-contact positions are NaN.
+    """
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+
+    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
+    matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
+
+    # Define significant folding distances:
+    # Default threshold [6, 12] avoids:
+    # >6: immediate neighbors (useless for folding info)
+    # <12: atoms that are too far apart  
+    distance_bool_matrix = (distance_matrix >= min_distance) & (distance_matrix <= max_distance)
+
+    # Boolean matrix where [i, j] is True if residue i and j belong to the same chain
+    same_chain_bool_matrix = np.equal.outer(chain_per_res, chain_per_res) 
+
+    # Intrachain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the same chain (same_chain_bool_matrix)
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
+
+    # Interchain contacts matrix. Must meet:
+    # distance criteria (distance_bool_matrix)
+    # AND both residues must belong to the different chains (~same_chain_bool_matrix)
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
+
+    return matrix_intra, matrix_inter
+
+
+def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, chains=None, pdb_id="-", filename=None):
+    """
+    falta docstring
+    """
+    if chains:
+        # Check if all requested chains are present in the structural information
+        available_chains = structural_info["chain"].unique()
+        for chain in chains:
+            if chain not in available_chains:
+                print(f"One or more requested chains are not present.")
+                return
+            
+        # Filter the structural info and get the indices of the rows we keep
+        # This is crucial to also slice the matrices correctly later if they don't match
+        chains_requested_bool_matrix = structural_info["chain"].isin(chains)
+        structural_info = structural_info[chains_requested_bool_matrix]
+                
+        indices = np.where(chains_requested_bool_matrix)[0]
+        intrachain_matrix = intrachain_matrix[np.ix_(indices, indices)]
+        interchain_matrix = interchain_matrix[np.ix_(indices, indices)]
+        
+    # Extract chain identifiers for each residue as a NumPy array
+    chain_per_res = structural_info["chain"].values
+    
+    plt.figure(figsize=(10, 12)) # Size of the plot
+
+    # Plot Intra-chain contacts in Green       
+    plt.imshow(intrachain_matrix, 
+              cmap="Greens_r", # Sets the color palette to Reversed Greens
+              interpolation="none", # Prevents blurring; each pixel represents exactly one residue
+              origin="lower") # Places the (0,0) index at the bottom-left corner
+
+    # Plot Inter-chain contacts in Green
+    # Since contact matrices contain NaNs, the second plot won't overwrite the first
+    plt.imshow(interchain_matrix, 
+              cmap="Reds_r", 
+              interpolation="none", 
+              origin="lower")
+    
+    # Manually creating patches for the legend
+    green_patch = mpatches.Patch(color="green", 
+                                label="Intra-chain contact") 
+    red_patch = mpatches.Patch(color="red", 
+                              label="Inter-chain contact")
+    patches = [green_patch, red_patch]
+    
+    # Adding legend
+    plt.legend(handles=patches, # Text of the legend
+              loc="upper right", # Place of the legend
+              bbox_to_anchor=(1.35, 1)) # bbox_to_anchor places legend outside the plot area
+ 
+    # Title and labels
+    plt.title(f"CONTACT MAP (Protein: {pdb_id})", fontsize=14)
+    plt.xlabel("Residue Index", fontsize=12)
+    plt.ylabel("Residue Index", fontsize=12)
+    
+    # Identify indices where the chain ID changes by comparing current to next element
+    idx_changes = np.where(chain_per_res[:-1] != chain_per_res[1:])[0] 
+    # List of the start and end points for every chain
+    boundaries = [0] + list(idx_changes + 0.5) + [len(chain_per_res)]
+
+    # Unique chain names in order of appearance
+    unique_chains = []
+    unique_chains_label = []
+    for each_chain in chain_per_res:
+        if each_chain not in unique_chains: 
+            unique_chains.append(each_chain)
+            unique_chains_label.append(f"Chain {each_chain}") # Create labels to plot them
+    
+    # Draw lines to visually separate the different chains in the matrix
+    for idx in idx_changes:
+        # Add 0.5 to place the line exactly between the pixels of two residues
+        plt.axhline(y=idx + 0.5, color="black", linestyle="--")
+        plt.axvline(x=idx + 0.5, color='black', linestyle="--")
+    
+    # Place the labels of the chain names at the midpoint of each boundary
+    ticks = []
+    for i in range(len(boundaries) - 1):
+        midpoint = (boundaries[i] + boundaries[i+1]) / 2 # Calculate the midpoint of each chain segment
+        ticks.append(midpoint) # Appends ticks
+
+    # Set up secondary axes to display chain labels
+    axes = plt.gca() # Grabs the active plot area
+    sec_xaxis= axes.secondary_xaxis("top") # Attaches a new axis to the top of that area
+    sec_yaxis = axes.secondary_yaxis("right") # Attaches a new axis to the right of that area
+
+    # Assign chain names to the secondary ticks
+    sec_xaxis.set_xticks(ticks)
+    sec_xaxis.set_xticklabels(unique_chains_label, fontsize=10)
+    
+    sec_yaxis.set_yticks(ticks)
+    sec_yaxis.set_yticklabels(unique_chains_label, fontsize=10)
+
+    plt.tight_layout() # Ensures labels/legend don't get cut off
+
+    if filename: # Check if a filename was provided to save the image
+        # Save the figure as a PNG file
+        plt.savefig(f"{filename}.png", 
+                    dpi=300, # dpi=300 ensures high resolution
+                    bbox_inches="tight") # bbox_inches="tight" prevents labels from being cut off
+        print(f"Contact plot for {pdb_id} successfully saved to {filename}.png")
+
+    plt.show()
+```
+
 # Results
 
 ## Structural Metadata and Parsing
 
 The developed pipeline successfully retrieved and integrated metadata for the selected PDB entries. By implementing a fixed-column parser, structural information was converted into a tabular format, ensuring the precise extraction of $C\alpha$ coordinates, chain identifiers, and residue numbering. This approach allowed for a robust handling of non-canonical amino acids and multi-chain complexes.\_
 
-```{python printing metadata info}
-df_metadata_info = save_metadata(id, filename)
-print(df_metadata_info)
+```{python}
+#| label: printing_metadata_info
+#| echo: false
+pdb_list = ["1RBP", "1QRE", "1DGF"]
+for id in pdb_list:
+  df_metadata_info = get_metadata_info(id)
+  print(f"METADATA INFORMATION ABOUT PDB ID: {id} ")
+  print("\n")
+  print(df_metadata_info)
+  print("\n\n\n")
 ```
 
 ## Distance Matrix
@@ -28,26 +591,41 @@ On the diagonal, the values are equal to 0 because the amino acids being compare
 
 In multimeric proteins, this matrix also reveals the quaternary interface. By observing the distances between residues belonging to different chain identifiers, we can pinpoint the specific regions where subunits pack together. This matrix serves as the mathematical foundation for the binary contact maps, as it allows us to apply specific distance thresholds to filter out significant biological interactions.
 
-```{python printing distance matrix}
+```{python}
+#| label: printing_distance_matrix
+#| echo: false
 
-dist_matrix = distance_matrix(df_struct_info)
-print("DISTANCE MATRIX")
-print(dist_matrix)
+for id in pdb_list:
+  df_struct_info = get_structural_info(id)
+  dist_matrix = distance_matrix(df_struct_info)
+  print(f"DISTANCE MATRIX ABOUT PDB ID: {id}")
+  print("\n")
+  print(dist_matrix)
+  print("\n\n\n")
 
 ```
 
 To focus on biologically relevant interactions, the distance matrices were filtered using a threshold of 6–12 Å. This range ensures that only significant spatial contacts—those contributing to protein folding and stability—are retained. The values out of range are represented as $NaN$.
 
-Through the plot_contact_matrix function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein's tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.
+Through the plot_contact_map function, the data was partitioned into two distinct matrices: one containing the intra-chain contact distances and the other the inter-chain contact distances. The first one, the intra_contact_matrix, captures the internal distances between residues belonging to the same polypeptide chain, representing the protein's tertiary fold. The second one, the inter_contact_matrix, allows for the identification of spatial relationships between residues from different chains. It is essential for characterizing the quaternary structure and pinpointing the interfaces where separate subunits interact to form multimeric assemblies.
 
 This dual-matrix approach allows for a clear visual and numerical distinction between the folding of individual subunits and the stabilization of the overall protein complex.
 
-```{python print intra and inter contact matrixces}
-intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
-print("INTRA-CHAIN CONTACT MATRIX")
-print(intra_contact_matrix)
-print("INTER-CHAIN CONTACT MATRIX")
-print(inter_contact_matrix)
+```{python}
+#| label : print_intra_inter_contact_matrixces
+#| echo : false
+
+for id in pdb_list:
+  intra_contact_matrix, inter_contact_matrix = contact_matrix(df_struct_info, dist_matrix)
+  print(f"INTRA-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
+  print("\n")
+  print(intra_contact_matrix)
+  print("\n\n")
+  print(f"INTER-CHAIN CONTACT MATRIX ABOUT PDB ID: {id}")
+  print("\n")
+  print(inter_contact_matrix)
+  print("\n\n\n")
+
 ```
 
 ## Contact Map Analysis
@@ -64,16 +642,20 @@ Based on the distribution of contacts and the chain boundary indicators (dashed 
 
 The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allowed for the clear overlay of these two interaction types, facilitating the identification of protein interfaces and overall topology.
 
-```{python plot_contact_matrix function}
-#| label: fig-contact-maps
-#| echo: true
-#| output: true
-for id, element in df_conjunto.items():
-    print(id)
-    num_chains = element["chain"].nunique()
-    print(f"Number of chains: {num_chains}")
-    m_dist = distance_matrix(element) 
-    plot_contact_matrix(df_struct_info, intra_contact_matrix, inter_contact_matrix, id)#### le metemos tmb element (del df_conjunto con la info de antes para que tenga información sobre la chain)
+```{python}
+#| label: plotting_contact_matrix
+#| echo: false
+
+for id in pdb_list:
+  df_struct_info = get_structural_info(id)
+  
+  print(f"PDB ID: {id}")
+
+  num_chains = df_struct_info["chain"].nunique()
+  print(f"Number of chains: {num_chains}")
+  m_dist = distance_matrix(df_struct_info) 
+  plot_contact_map(df_struct_info, intra_contact_matrix, inter_contact_matrix, pdb_id=id)
+  print("\n\n")
 ```
 
 The 1RBP protein shows discrete segments oriented perpendicularly to the main diagonal. These patterns are the classic "signature" of antiparallel $\beta$-sheets, which in this case constitute the eight-stranded $\beta$-barrel that forms the protein's central cavity.
