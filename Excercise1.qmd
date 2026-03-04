@@ -769,7 +769,7 @@ Through the plot_contact_map function, the data was partitioned into two distinc
 This dual-matrix approach allows for a clear visual and numerical distinction between the folding of individual subunits and the stabilization of the overall protein complex.
 
 ```{python}
-#| label : print_intra_inter_contact_matrixces
+#| label : print_intra_inter_contact_matrices
 #| echo : false
 
 for id in pdb_list:
@@ -813,8 +813,12 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 #|   - "Contact map for the protein 1QRE"
 #|   - "Contact map for the protein 1DGF"
 #| layout-ncol: 1
+#| fig-width: 7
+#| fig-height: 7
 #| fig-show: hold
 #| fig-align: center
+#| crossref:
+#|   subref-labels: alpha A.
 
 for id in pdb_list:
     df_struct_info = get_structural_info(id)
