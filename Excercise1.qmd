@@ -16,13 +16,11 @@ date: 04/03/2026
 
 # Introduction
 
-Structural bioinformatics integrates computational methods, data resources and algorithms to study, analyze and predict the three-dimensional organization of biomacromolecules. High-resolution structural information  provides insights into biological function and enables the characterization of molecular effects of mutations, ligand binding and intermolecular interactions.
-
-Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent interactions between atoms of residues of the same molecule, intramolecular, or other molecules, intermolecular. These interactions include hydrogen bonds, hydrophobic interactions and electrostatic forces. Structural bioinformatics aims to characterize these interactions through computational analysis of experimentally determined or predicted structures.
+Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent intramolecular interactions between residues of the same polypeptide chain, whereas intermolecular interactions contribute to quaternary structure formation. These interactions include hydrogen bonds, hydrophobic interactions and electrostatic forces. Structural bioinformatics aims to characterize these interactions through computational analysis of experimentally determined or predicted structures.
 
 The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB), which stores three-dimensional structures obtained by X-ray crystallography, nuclear magnetic resonance spectroscopy and cryo-electron microscopy. PDB files contain detailed metadata, experimental information, protein sequences, and three-dimensional atomic coordinates. Through computational analysis, this information can be extracted from these files.
 
-To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the C$\alpha$  of all the residues in a protein. A distance threshold is established to determine if two residues interact or not. Specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
+To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα of all the residues in a protein. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
 
 Nowadays, although modelling and structure prediction methods have achieved high levels of accuracy, the analysis of atomic coordinates is still essential to understand the spatial organization of proteins and macromolecular complexes.
 
@@ -32,7 +30,7 @@ Nowadays, although modelling and structure prediction methods have achieved high
 The main objective of this project is to implement computational functions to:
 
 1. Parse PDB files to extract structural metadata and atomic coordinates.
-2. Compute pairwise distance matrices between C$\alpha$ atoms of protein residues.
+2. Compute pairwise distance matrices between Cα atoms of protein residues.
 3. Plot contact maps to characterize the structural organization and oligomeric state of the analyzed proteins.
 
 ---
@@ -47,9 +45,9 @@ Each protein in this database is identified with a unique four-character alphanu
 
 The structures analyzed in this project correspond to the following proteins:
 
-- **Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: *1RBP*)**, which is involved in retinol transport in humans.
-- **Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: *1QRE*)**, which regulates pH by catalyzing the reaction between $CO_2$ and $H_2O$ to produce bicarbonate and protons.
-- **Catalase (*Homo sapiens*, PDB ID: *1DGF*)**, which cells from oxidative damage by decomposing $H_2O_2$ into water and oxygen.
+- **Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: 1RBP)**, which is involved in retinol transport in humans.
+- **Carbonic Anhydrase (*Methanosarcina thermophila*, PDB ID: 1QRE)**, which regulates pH by catalyzing the reaction between $CO_2$ and $H_2O$ to produce bicarbonate and protons.
+- **Catalase (*Homo sapiens*, PDB ID: 1DGF)**, which cells from oxidative damage by decomposing $H_2O_2$ into water and oxygen.
 
 ## Parsing PDB Files
 
