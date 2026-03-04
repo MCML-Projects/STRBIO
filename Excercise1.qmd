@@ -345,16 +345,25 @@ def get_metadata_info(pdb_id, filename=None):
 
 ## Structural Infrormation Extraction and Distance Matrix Calculation
 
-To understand how a protein folds and how its redidues interact with each other, it is needed to extract the spatial coordinates of the aminoacids. Then it is possible to calculate the pairwise distances between them.
+To understand how a protein folds and how its redidues interact with each other, we first need to extract the spatial coordinates of the amino acids. This allows us to calculate the pairwise distances between them.
 
-PDB stablished a text standard  and human readable format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of information, they are fixed register lines with specific fields. The file start with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. Then, there is a section with the atomic coordinates, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a section with the connectivity information, which describes how the atoms are connected to form residues and chains.
+PDB stablished a standardized, human-readable text format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of record, utilizing fixed-width columns. The file begins with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. This is followed by the atomic coordinates section, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a connectivity section that describes how these atoms are bonded to form the overall structure of the molecule.
 
-To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PSB API to obtain textual data of the PDB file. Then, it parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
+To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PSB API to obtain raw textual data of the PDB file. It then parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
 
-The function also, traduce the aminoacid three-letter code to one-letter code, through a mapping dictionary. 
+The function also, translates the three-letter amino acid codes into one-letter codes using a mapping dictionary. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured dataframe that will be used for subsequent distance and contact map calculations.
 
-Finally, the function extract the chain, number of residue and the cartesian coordinates (x, y, z), and return a dataframe that will be used for the subsequent distance and contact map calculations.
+To understand a protein's three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. By calculating these distances, we can identify secondary structural elements and determine the tertiary or quaternary folding patterns that are crucial for the protein's biological function.
 
+Mathematically, since each amino acid is represented by the Cartesian coordinates $(x, y, z)$ of its alpha carbon ($C\alpha$), the distance $d$ between two residues $i$ and $j$ is calculated using the three-dimensional *Euclidean distance formula*:
+$$d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}$$
+
+As a result, the matrix is square and symmetric, with diagonal elements always being zero, because they represent the distance of a residue to itself. Values close to the diagonal typically represent local interactions, while values far from the diagonal indicate long-range contacts between residues that are distant in the linear sequence but close in 3D space. 
+
+To compute this, we implemented the @lst-distance-matrix, which extracts the $(x, y, z)$ coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).
+
+
+### Code Implementation
 ```{python}
 #| label: lst-get-structural-info
 #| lst-cap: "Function for getting the structural information."
@@ -485,17 +494,6 @@ def get_structural_info(pdb_id, flag_assembly=False, filename=None):
     return results_df
 ```
 
-## Distance and Contact Map Calculations
-
-To understand a protein's three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. By calculating these distances, we can identify secondary structural elements and determine the tertiary or quaternary folding patterns that are crucial for the protein's biological function.
-
-Mathematically, since each amino acid is represented by the Cartesian coordinates $(x, y, z)$ of its alpha carbon ($C\alpha$), the distance $d$ between two residues $i$ and $j$ is calculated using the three-dimensional *Euclidean distance formula*:
-$$d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}$$
-
-As a result, the matrix is square and symmetric, with diagonal elements always being zero, because they represent the distance of a residue to itself. Values close to the diagonal typically represent local interactions, while values far from the diagonal indicate long-range contacts between residues that are distant in the linear sequence but close in 3D space. 
-
-To compute this, we implemented the @lst-distance-matrix, which extracts the $(x, y, z)$ coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).
-
 ```{python}
 #| label: lst-distance-matrix
 #| lst-cap: "Function for calculating the distance matrix."
@@ -544,9 +542,16 @@ def distance_matrix(df_structural_info):
     return distance_matrix
 ```
 
-In proteins, there can be both intrachain and interchain contacts, taking that into account, @lst-contact-map function was implemented to generate the corresponding matrices from the pairwise $C\alpha$ distance matrix and residue chain information. Contacts were defined using a distance threshold between 6 Å and 12 Å by default, excluding trivial sequential contacts and focusing on spatially relevant interactions associated with protein folding. 
+
+## Contact Map Calculation
+
+In proteins, there can be both intrachain and interchain contacts, taking that into account, @lst-contact-map function was implemented to generate the corresponding matrices from the pairwise $C\alpha$ distance matrix and residue chain information. 
+
+Contacts were defined using a specific distance threshold, set by default between 6 Å and 12 Å. Distances below 6 Å are excluded to avoid trivial sequential contacts (immediate neighbors along the backbone), while distance above 12 Å are generally too far for meaningful non-covalent interactions. This range captures the most relevant spatial interactions associated with protein folding and function.
 
 To visualize the computed contact matrices of each protein @lst-contact-matrix function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. This make easier the identification of oligomers.
+
+### Code Implementation
 
 ```{python}
 #| label: lst-contact-matrix
@@ -752,8 +757,6 @@ TABLA CON LOS RESULTADOS DE LAS DISTANCIAS Y CONTACTOS
 
 ## Work Register
 
-[Aquí básicamente pondría el paso a paso que hemos seguido en github, con los commits, etc. para que se vea el proceso de trabajo]
-
 The development of this project has followed a workflow managed via GitHub, in order it can be reproduced.
 
 The following table sumarizes the main stages of the project.
@@ -772,7 +775,7 @@ table_github = pd.DataFrame({
         "Repository initialization and project structuring", 
         "Access to each protein key information via APIs and store it in a dataframe", 
         "Get access to PDB files and parse them to gen atomic coordinates",
-        "Compute the distances matrix between $C_{\\alpha}$ atoms",
+        "Compute the distances matrix between Cα atoms",
         "Plot intra/interchain contacts giving a threshold",
         "Create the final file and include all the previous analysis"]})
 table_github
