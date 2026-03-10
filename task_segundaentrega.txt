@@ -6,3 +6,5 @@ SEGUNDA ENTREGA P1:
 - arreglar lo de la cita de las figuras @fig-plot-***-1/2/3 en el orden que estén
 - revisar Shiny :o
 - resumir el texto de la p1
+- no se representa el contacto de un aminoácido consifo mismo
+- se representa como matriz binaria (1 contacto, 0 no contacto)
