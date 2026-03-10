@@ -5,3 +5,4 @@ SEGUNDA ENTREGA P1:
 - arreglar los plots (que salga bien la leyenda) sin moverlo
 - arreglar lo de la cita de las figuras @fig-plot-***-1/2/3 en el orden que estén
 - revisar Shiny :o
+- resumir el texto de la p1
