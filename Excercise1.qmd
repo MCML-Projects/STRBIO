@@ -17,14 +17,9 @@ date: 04/03/2026
 
 # Introduction
 
-Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent intramolecular interactions between residues of the same polypeptide chain, whereas intermolecular interactions contribute to quaternary structure formation. These interactions include hydrogen bonds, hydrophobic interactions and electrostatic forces. Structural bioinformatics aims to characterize these interactions through computational analysis of experimentally determined or predicted structures.
+Proteins are macromolecules whose function is highly related to their three-dimensional structure. Their organization can be described in four levels, which depend on folding. Protein folding is driven by non-covalent intramolecular interactions between residues of the same polypeptide chain, whereas intermolecular interactions contribute to quaternary structure formation. 
 
-The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB), which stores three-dimensional structures obtained by X-ray crystallography, nuclear magnetic resonance spectroscopy and cryo-electron microscopy. PDB files contain detailed metadata, experimental information, protein sequences, and three-dimensional atomic coordinates. Through computational analysis, this information can be extracted from these files.
-
-To analyze protein architecture contact maps are commonly used as a simplified representation of the three-dimensional structure. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα atoms of residues within a protein or between different protein chains. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
-
-Nowadays, although modelling and structure prediction methods have achieved high levels of accuracy, the analysis of atomic coordinates is still essential to understand the spatial organization of proteins and macromolecular complexes.
-
+The main repository of experimentally determined macromolecuar structures is the Protein Data Bank (PDB). By applying computational analysis to the data stored in PDB files, detailed structural information can be extracted and translated into simplified representations, such as contact maps. These maps use pairwise distance matrices to provide a two-dimensional visualization of the interactions between the Cα atoms of residues within a protein or between different protein chains. In addition, specific patterns are associated with specific secondary structure elements, so it is possible to infer the spatial organization of proteins.
 
 ## Objective
 
@@ -42,8 +37,6 @@ The main objective of this project is to implement computational functions to:
 
 RCSB-PDB (Research Collaboratory for Structural Bioinformatics Protein Data Bank, <https://www.rcsb.org/>) is a repository of experimentally determined, and also computationally predicted, structures of proteins, nucleic acids and macromolecular complexes. 
 
-Each protein in this database is identified with a unique four-character alphanumeric identifier. This identifier allows access to detailed information about the protein, such as atomic coordinates, sequence, experimental methodology and associated metadata.
-
 The structures analyzed in this project correspond to the following proteins:
 
 - **Plasma Retinol-Binding Protein Precursor (*Homo sapiens*, PDB ID: 1RBP)**, which is involved in retinol transport in humans.
@@ -56,13 +49,8 @@ The structures analyzed in this project correspond to the following proteins:
  Before introducing the main functions of the project, it is important to highlight the implmentation of @lst-setup-libraries, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
 :::
 
-The data base PDB is one of the most widely used worldwide in the field of bioinformatics, among other aspects for its accessibility and the large amount of information it contains. Taking advantage of the possibility of querying through its API, we have been able to extract the necessary data through a parsing function @lst-get-metadata.
-
-The objective of this function is to parse the PDB files of the studied proteins, extracting the relevant information for subsequent analysis. Specifically, we have obtained the descriptive and experimental information associated with each entry of the Protein Data Bank.
-
-The function defined as @lst-get-metadata performs two independent queries to the RCSB PDB REST API (<https://data.rcsb.org/redoc/index.html>), one at the structural level (<https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById>) and another at the polymer entity level (<https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById>). This separation allows us to access both the experimental and general details of the protein and the specific information related to it. 
-
-In first place, the function implements a basic system of error handling to ensure that the queries are successful. This is approached through the definition of the function @lst-api-errors, which checks the status code of the response and returns an appropriate message in case of an error. 
+ Taking advantage of the possibility of utilizing the PDB's API, we have been able to extract the necessary data of PDB through a parsing function @lst-get-metadata. This function extracts the relevant information for subsequent analysis by performing two independent queries to the RCSB PDB REST API (<https://data.rcsb.org/redoc/index.html>), one at the structural level (<https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById>) and another at the polymer entity level (<https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById>). This separation allows us to access both the experimental and general details of the protein and the specific information related to it.
+ This function also implements a basic HTTP error-handling system through the auxiliary function @lst-api-errors, which checks the status code of the response. 
 
 Once the queries are successful, the function extracts the relevant information from the JSON responses:
 
@@ -81,9 +69,8 @@ table_info
 
 ```
 
-There are also some fields with multiple values, such as authors, experimental methods, etc. For those cases, an auxiliary function (@lst-extract-metadata) is used to concatenate the elements of the list into a single string, separating the values with commas. This facilitates the presentation of the information and its subsequent analysis.
-
-All this information is organized into a structured fromat, as it is a dictionary, which allows its conversion into a pandas DataFrame and its export to a CSV file for further analysis and visualization. This is done through the @lst-get-metadata, which takes the metadata dictionary and the desired file name as input and saves the DataFrame as a CSV file. 
+Since some extracted fields contain multiple values (such as authors or experimental methods), the function @lst-extract-metadata is used to format these lists into a single comma-separated string.
+Finally, the information is organized into a structured pandas DataFrame and, if a filename is provided as an optional argument, the data is exported to a CSV file.
 
 ### Code Implementation
 
@@ -344,21 +331,16 @@ def get_metadata_info(pdb_id, filename=None):
 
 ## Structural Infrormation Extraction and Distance Matrix Calculation
 
-To understand how a protein folds and how its redidues interact with each other, we first need to extract the spatial coordinates of the amino acids. This allows us to calculate the pairwise distances between them.
+To understand how a protein folds and how its redidues interact, we must first extract the spatial coordinates of its amino acids. The PDB established a standardized, human-readable text format to store the 3D structures of biomolecules, utilizing fixed-width columns. 
+In the atomic coordinates section, each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). These lines start with the keyword "ATOM". 
 
-PDB stablished a standardized, human-readable text format to store the 3D structures of biomolecules. Each line in a PDB file corresponds to a specific type of record, utilizing fixed-width columns. The file begins with a header section, which contains general information about the structure, such as the PDB ID, protein name, realesed date, etc. This is followed by the atomic coordinates section, where each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). Those lines start with the keyword "ATOM". Finally, there is a connectivity section that describes how these atoms are bonded to form the overall structure of the molecule.
+To extract this data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PDB API to obtain raw textual data of the PDB file. The function then parses the response to extract the atomic coordinates of the C$\alpha$ atoms and checks the absence of non-conventional aminoa acids. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured DataFrame. If a filename is specified, the function also saves the processed data to a CSV file.
 
-To extract the mentioned data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PDB API to obtain raw textual data of the PDB file. It then parses the response to extract the atomic coordinates of the C$\alpha$ atoms, which are commonly used to represent the backbone of the protein structure. 
-
-The function also, translates the three-letter amino acid codes into one-letter codes using a mapping dictionary. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured dataframe that will be used for subsequent distance and contact map calculations.
-
-To understand a protein's three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. By calculating these distances, we can identify secondary structural elements and determine the tertiary or quaternary folding patterns that are crucial for the protein's biological function.
-
+To understand a protein's three-dimensional structure, we must measure the distances between its different parts. A Distance Matrix is a useful tool for this, providing a complete view of how every pair of residues in the structure is positioned. 
 Mathematically, since each amino acid is represented by the Cartesian coordinates $(x, y, z)$ of its alpha carbon ($C\alpha$), the distance $d$ between two residues $i$ and $j$ is calculated using the three-dimensional *Euclidean distance formula*:
 $$d_{ij} = \sqrt{(x_i - x_j)^2 + (y_i - y_j)^2 + (z_i - z_j)^2}$$
 
 To compute this, we implemented the @lst-distance-matrix, which extracts the $(x, y, z)$ coordinates as a NumPy array for optimized access. Using a nested loop structure, it iterates through every possible pair of atoms, calculating the differences in each spatial dimension, with the result in Angstroms (Å).
-
 
 ### Code Implementation
 ```{python}
@@ -546,7 +528,7 @@ In proteins, there can be both intrachain and interchain contacts, taking that i
 
 Contacts were defined using a specific distance threshold, set by default between 6 Å and 12 Å. Distances below 6 Å are excluded to avoid trivial sequential contacts (immediate neighbors along the backbone), while distance above 12 Å are generally too far for meaningful non-covalent interactions. This range captures the most relevant spatial interactions associated with protein folding and function.
 
-To visualize the computed contact matrices of each protein @lst-contact-map function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively, which makes it easier the identification of oligomers.
+To visualize the computed contact matrices of each protein @lst-contact-map function was developed to generate contact maps differentiating between intrachain and interchain interactions, represented in green and red, respectively. Additionally, the chains argument can be included, allowing for a focused visualization of specific protein chains. If a filename is provided, the generated images are automatically saved.
 
 ### Code Implementation
 
@@ -618,7 +600,30 @@ def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distanc
 
 def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, chains=None, pdb_id="-", filename=None):
     """
-    falta docstring
+    Visualize protein contact maps, distinguishing between intra-chain and inter-chain interactions.
+
+    Parameters
+    ----------
+    structural_info : pd.DataFrame
+        DataFrame containing structural data.
+    intrachain_matrix : np.ndarray
+        2D array representing distances or contacts between residues of the same chain.
+        Non-contact positions should be NaN.
+    interchain_matrix : np.ndarray
+        2D array representing distances or contacts between residues of different chains.
+        Non-contact positions should be NaN.
+    chains : list of str, optional
+        A list of specific chain identifiers to focus the visualization on. 
+        If None, all available chains are plotted.
+    pdb_id : str, optional
+        The PDB identifier of the protein, used for the plot title (default is "-").
+    filename : str, optional
+        The base name for the output file. 
+
+    Returns
+    -------
+    None
+        The function displays the plot and optionally saves it to a file.
     """
     if chains:
         # Check if all requested chains are present in the structural information
