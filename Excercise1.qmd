@@ -566,7 +566,7 @@ def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distanc
     # Extract chain identifiers for each residue as a NumPy array
     chain_per_res = structural_info["chain"].values
 
-    # Initialize contact matrices with NaNs (to prevent plotting non-relevant points)
+    # Initialize contact matrices with NaN
     matrix_intra = np.full_like(distance_matrix, np.nan) # intrachain contacts
     matrix_inter = np.full_like(distance_matrix, np.nan)# interchain contacts
 
@@ -582,12 +582,12 @@ def contact_matrix(structural_info, distance_matrix, min_distance=6, max_distanc
     # Intrachain contacts matrix. Must meet:
     # distance criteria (distance_bool_matrix)
     # AND both residues must belong to the same chain (same_chain_bool_matrix)
-    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & same_chain_bool_matrix]
+    matrix_intra[distance_bool_matrix & same_chain_bool_matrix] = 1
 
     # Interchain contacts matrix. Must meet:
     # distance criteria (distance_bool_matrix)
     # AND both residues must belong to the different chains (~same_chain_bool_matrix)
-    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = distance_matrix[distance_bool_matrix & ~same_chain_bool_matrix] 
+    matrix_inter[distance_bool_matrix & ~same_chain_bool_matrix] = 1
 
     return matrix_intra, matrix_inter
 ```
@@ -649,16 +649,19 @@ def plot_contact_map (structural_info, intrachain_matrix, interchain_matrix, cha
 
     # Plot Intra-chain contacts in Green       
     plt.imshow(intrachain_matrix, 
-              cmap="Greens_r", # Sets the color palette to Reversed Greens
+              cmap="Greens", # Sets the color palette to Greens
               interpolation="none", # Prevents blurring; each pixel represents exactly one residue
-              origin="lower") # Places the (0,0) index at the bottom-left corner
+              origin="lower",vmin=0,vmax=1) # Places the (0,0) index at the bottom-left corner
+
 
     # Plot Inter-chain contacts in Green
     # Since contact matrices contain NaNs, the second plot won't overwrite the first
     plt.imshow(interchain_matrix, 
-              cmap="Reds_r", 
+              cmap="Reds", 
               interpolation="none", 
-              origin="lower")
+              origin="lower",
+              vmin=0,
+              vmax=1)
     
     # Manually creating patches for the legend
     green_patch = mpatches.Patch(color="green", 
@@ -853,6 +856,7 @@ The 1DGF contact map (@fig-contact-maps-3) reveals prominent segments oriented b
 This pattern is consistently manifested across the diagonal quadrants of the contact matrix; since this pattern repeats four times with high regularity, it suggests that the protein is composed of four identical subunits with the same structural composition. The contacts displayed in the off-diagonal quadrants (indicated in red) represent the interactions between the different polypeptide chains—consistently with the metadata identifying a tetrameric structure—exhibiting a symmetric distribution along the main diagonal. Mapping the chains from bottom-to-top and left-to-right as A, B, C, and D allows for a direct comparison of inter-chain interactions. The analysis reveals that the highest density of contacts occurs between pairs A-B, A-C, B-D, and D-C, whereas a significantly lower number of contacts is observed in the quadrants corresponding to the A-D and B-C interfaces.
 
 ---
+
 # Discussion
 
 This project has successfully implemented a computational approach to analyze protein architecture through the generation and interpretation of distance and contact matrices. By processing structural data from the PDB, we have achieved an efficient generation of contact maps, providing a clear visual representation of the complex three-dimensional folding of the studied proteins. 
@@ -860,6 +864,7 @@ This project has successfully implemented a computational approach to analyze pr
 In particular, the developed pipeline was applied to characterize the intramolecular and intermolecular interaction patterns of proteins 1RBP, 1QRE, and 1DGF, effectively mapping their tertiary and quaternary organizations. 
 
 ## `1RBP`
+
 
 The analysis of 1RBP (Retinol-Binding Protein) confirms its characteristic $\beta$-barrel tertiary structure. When compared to the reference data in the Protein Data Bank (PDB), where the structure was determined via X-ray diffraction at a high resolution of 2.0 Å, the generated contact map (@fig-contact-maps-1) precisely aligns with the experimentally observed conformation. The contact matrix highlights the $\beta$-barrel core where predominant anti-diagonal signals correspond to the eight antiparallel $\beta$-strands that wrap into a closed barrel, a hallmark of the lipocalin family. In addition to the barrel, the map identifies a specific $\alpha$-helical zone located near the C-terminus. This is visible in the contact map as a localized area of increased density along the main diagonal, representing the short-range $(i, i+4)$ interactions characteristic of helical turns.
 
