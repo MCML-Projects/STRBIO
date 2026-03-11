@@ -326,7 +326,7 @@ def get_metadata_info(pdb_id, filename=None):
         df.to_csv(f"{filename}.csv", index=False) # index=False to prevent writing row numbers
         print(f"Metadata for {pdb_id} successfully saved to {filename}.csv")
 
-    return metadata
+    return df
 ```
 
 ## Structural Infrormation Extraction and Distance Matrix Calculation
@@ -743,10 +743,7 @@ The developed pipeline successfully retrieved and integrated metadata for the se
 pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
   df_metadata_info = get_metadata_info(id)
-  print(f"METADATA INFORMATION ABOUT PDB ID: {id} ")
-  print("\n")
-  print(df_metadata_info)
-  print("\n\n\n")
+  display(df_metadata_info)
 ```
 
 ## Distance Matrix
@@ -759,7 +756,7 @@ In multimeric proteins, this matrix also reveals the quaternary interface. By ob
 
 ```{python}
 #| label: printing_distance_matrix
-#| echo: false
+#| eval: false
 
 for id in pdb_list:
   df_struct_info = get_structural_info(id)
@@ -779,7 +776,7 @@ This dual-matrix approach allows for a clear visual and numerical distinction be
 
 ```{python}
 #| label : print_intra_inter_contact_matrixces
-#| echo : false
+#| eval : false
 
 for id in pdb_list:
     df_struct_info = get_structural_info(id)
@@ -828,7 +825,7 @@ The implementation of `np.equal.outer` and `plt.imshow` with $NaN$ masking allow
 #| fig-align: center
 #| crossref:
 #|   subref-labels: alpha A.
-
+pdb_list = ["1RBP", "1QRE", "1DGF"]
 for id in pdb_list:
     df_struct_info = get_structural_info(id)
     num_chains = df_struct_info["chain"].nunique()

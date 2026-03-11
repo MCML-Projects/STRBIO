@@ -1,12 +1,6 @@
 SEGUNDA ENTREGA P1:
-- Meter la función de matrices y adaptarla para que no se vea tanto 
-        (marta a: yo ni me molestaría; e iual directamente ni printearía las matrices)
-        (si quereis dejar los chunks y poner un eval=false, pero vaya, ns)
-- cambiar lo de (a) -> A que dice carlota. Para que salga más mono solo
-- arreglar lo de la leyenda de los plots, figsize=4 al principio del chunk
-- arreglar lo de la cita de las figuras @fig-plot-***-1/2/3 en el orden que estén
-- revisar Shiny :o 
-            (marta a: tampoco me molestaría)
+
+
 - resumir el texto de la p1:
             - marta a: he resumido desde el principio hasta acabar todos los métodos
 
@@ -15,5 +9,13 @@ SEGUNDA ENTREGA P1:
 TASK COMPLETADAS:
 - no se representa el contacto de un aminoácido consifo mismo
 - se representa como matriz binaria (1 contacto, 0 no contacto)
+- he quitado el printing de matrices distancia y contactos
+- he puesto para printear bonito (en tabla) los metadatos)
 
 
+
+QUEDA EN DUDA:
+- Meter la función de matrices y adaptarla para que no se vea tanto 
+        (marta a: yo ni me molestaría; e iual directamente ni printearía las matrices)
+        (si quereis dejar los chunks y poner un eval=false, pero vaya, ns)
+- revisar Shiny :o  -> (marta a: tampoco me molestaría)
