@@ -46,7 +46,7 @@ The structures analyzed in this project correspond to the following proteins:
 ## Parsing PDB Files
 
 ::: {.callout-note}
- Before introducing the main functions of the project, it is important to highlight the implmentation of @lst-setup-libraries, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
+ Before introducing the main functions of the project, it is important to highlight the implementation of @lst-setup-libraries, which initializes all required libraries and dependencies, avoiding redundancy and improving code readability.  
 :::
 
  Taking advantage of the possibility of utilizing the PDB's API, we have been able to extract the necessary data of PDB through a parsing function @lst-get-metadata. This function extracts the relevant information for subsequent analysis by performing two independent queries to the RCSB PDB REST API (<https://data.rcsb.org/redoc/index.html>), one at the structural level (<https://data.rcsb.org/redoc/index.html#tag/Entry-Service/operation/getEntryById>) and another at the polymer entity level (<https://data.rcsb.org/redoc/index.html#tag/Entity-Service/operation/getPolymerEntityById>). This separation allows us to access both the experimental and general details of the protein and the specific information related to it.
@@ -61,7 +61,7 @@ import pandas as pd
 
 table_info = pd.DataFrame({
     "Metadata": ["PDB ID", "Protein Name", "Source Organism", "Determination Method", "Authors", "Release Date", "Resolution", "Number of Peptide Chains", "Number of Other Molecules"],
-    "Description": ["Unique identifier for the protein structure", "The name of the protein", "The organism from which the protein was derived", "The method used to determine the protein structure (e.g., X-ray crystallography, NMR spectroscopy)", "The researchers who contributed to the determination of the structure", "The release date of the structure", "The resolution of the structure, if applicable", "The number of peptide chains present in the structure", "The number of other molecules (e.g., ligands, water) present in the structure"],
+    "Description": ["Unique identifier for the protein structure", "The name of the protein", "The host organism for the protein", "The method used to determine the protein structure (e.g., X-ray crystallography, NMR spectroscopy)", "The researchers who contributed to the determination of the structure", "The release date of the structure", "The resolution of the structure, if applicable", "The number of peptide chains present in the structure", "The number of other molecules (e.g., ligands, water) present in the structure"],
     "Source (API JSON field)": ["rcsb_id", "rcsb_polymer_entity.pdbx_description", "rcsb_entity_source_organism", "exptl.method", "rcsb_authors", "rcsb_accession_info.initial_release_date", "rcsb_entry_info.resolution_combined", "rcsb_entry_info.polymer_entity_count_protein", "rcsb_entry_info.nonpolymer_entity_count"]
 })
 
@@ -331,7 +331,7 @@ def get_metadata_info(pdb_id, filename=None):
 
 ## Structural Infrormation Extraction and Distance Matrix Calculation
 
-To understand how a protein folds and how its redidues interact, we must first extract the spatial coordinates of its amino acids. The PDB established a standardized, human-readable text format to store the 3D structures of biomolecules, utilizing fixed-width columns. 
+To understand how a protein folds and how its redidues interact, we must first extract the spatial coordinates of its amino acids. The PDB establish a standardized, human-readable text format to store the 3D structures of biomolecules, utilizing fixed-width columns. 
 In the atomic coordinates section, each line corresponds to an atom in the structure and contains information about its type, residue, chain, and 3D coordinates (x, y, z). These lines start with the keyword "ATOM". 
 
 To extract this data, we have implemented the function @lst-get-structural-info, which make a request to the RCSB PDB API to obtain raw textual data of the PDB file. The function then parses the response to extract the atomic coordinates of the C$\alpha$ atoms and checks the absence of non-conventional aminoa acids. Finally, it extracts the chain identifier, residue number and the cartesian coordinates (x, y, z), returning a structured DataFrame. If a filename is specified, the function also saves the processed data to a CSV file.
@@ -423,13 +423,14 @@ def get_structural_info(pdb_id, flag_assembly=False, filename=None):
                 except: # Keep previous model index if parsing fails
                     pass
 
-        if line.startswith("ATOM"): # Processing only atom lines
+        if line.startswith(("ATOM","HETATM")): # Processing only atom lines
             # The PDB format uses fixed-width columns rather than delimiters (tabs/spaces)
             # Extract atom name (columns 13-16)
             atom_name = line[12:16].strip() # .strip() to remove blank spaces
-
-            # Filter for Alpha Carbons (CA) to represent the protein backbone
-            if atom_name == "CA": 
+            # Extract element (columns 76-78)
+            element = line[76:78].strip().upper() # .upper() to get uppercase
+            # Filter for ONLY Alpha Carbons (CA) to represent the protein backbone
+            if atom_name == "CA" and element != "CA": # not calcium ions
                 # Extract 3-letter amino acid name (columns 18-20)
                 aa_name = line[17:20].strip() 
                 # Convert 3-letter to 1-letter using aa_map dictionary
@@ -750,7 +751,9 @@ for id in pdb_list:
 
 Structural information allows to calculate the distance matrix. As mentioned before, the distance matrix contains the distance between carbon-alpha ($C\alpha$) atoms of each amino acid one-to-one. This is calculated as the 3D Euclidean distance between the coordinates $(x, y, z)$ of the atoms.
 
-On the diagonal, the values are equal to 0 because the amino acids being compared are the same. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.
+It is worth noting that while the use of alpha-carbon ($C\alpha$) coordinates provides a computationally efficient and clear representation of the protein backbone, alternative methodologies could have been employed. For instance, utilizing $C\beta$ atoms or an all-atom distance approach would have yielded a more detailed reconstruction of the side-chain orientations. Such alternatives might offer higher sensitivity in detecting specific chemical interactions, which are occasionally simplified or lost when focusing exclusively on the $C\alpha$ trace. Consequently, the choice of methodology directly influences the density of the contact map and the interpretation of the precise docking interfaces between subunits.
+
+On the diagonal, the values are equal to 0 because the amino acids being compared to themselves. The matrix provides a quantitative map of the protein’s spatial organization. Values near the diagonal represent local interactions, reflecting the proximity of residues in the primary sequence. Conversely, off-diagonal values represent long-range interactions, identifying residues that are distant in the sequence but spatially close due to the three-dimensional folding of the polypeptide chain.
 
 In multimeric proteins, this matrix also reveals the quaternary interface. By observing the distances between residues belonging to different chain identifiers, we can pinpoint the specific regions where subunits pack together. This matrix serves as the mathematical foundation for the binary contact maps, as it allows us to apply specific distance thresholds to filter out significant biological interactions.
 
@@ -891,6 +894,7 @@ Furthermore, contact maps facilitate the identification of recurring structural 
 # Conclusion
 In this project, we have successfully developed a robust computational pipeline to analyze protein structures through distance and contact matrices. By leveraging Python and structural data from the PDB, we achieved the efficient generation of contact maps, providing a clear visual representation of complex three-dimensional folds.
 A critical aspect of this work was the implementation of a coherent distance filtering strategy. By applying thresholds between 6 and 12 Å, we effectively eliminated structural noise, retaining only the biologically significant interactions. This allowed for a precise distinction between intra-chain (tertiary) and inter-chain (quaternary) contacts, pinpointing the exact regions responsible for subunit packing and overall complex stabilization.The results demonstrate that contact maps are powerful tools for structural biology, as they condense thousands of atomic coordinates into identifiable geometric patterns—such as the characteristic signatures of $\alpha$-helices and $\beta$-sheets. 
+However, it is important to acknowledge the limitations of this approach. While contact matrices simplify structural complexity, they inherently sacrifice specific chemical detail, such as the orientation of side chains or the nature of forces that drive these interactions. Additionally, the reliance on a static distance threshold may overlook dynamic conformational changes that occur beyond the predefined cutoff.
 In conclusion, the methodologies applied in this study provide a reliable and scalable framework for the comparative analysis of protein architectures and their functional interfaces.
 
 ---
@@ -899,9 +903,9 @@ In conclusion, the methodologies applied in this study provide a reliable and sc
 
 ## Work Register
 
-The development of this project has followed a workflow managed via GitHub, in order it can be reproduced.
+The development of this project has followed a workflow managed via GitHub, in order for it to be reproduced if needed.
 
-The following table sumarizes the main stages of the project.
+The following table summarizes the main stages of the project.
 
 ```{python}
 #| echo: false
